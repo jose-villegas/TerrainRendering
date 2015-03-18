@@ -10,6 +10,7 @@ namespace oglplus
             VertexShader vs;
             FragmentShader fs;
             Program prog;
+            Texture tex;
             //VAO for the mesh (just 2 triangles)
             VertexArray triangles;
             //VBO for the vertices positions
