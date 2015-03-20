@@ -18,6 +18,23 @@ namespace oglplus
         public:
             Example(const Vec3f& color)
             {
+                vs.Source((GLSLString)
+                          "#version 330\n "
+                          "in vec3 Position;"
+                          "void main(void)"
+                          "{gl_Position = vec4(Position, 1.0);}");
+                vs.Compile();
+                fs.Source((GLSLString)
+                          "#version 330\n"
+                          "out vec3 fragColor; "
+                          "uniform vec3 Color; "
+                          "void main(void)"
+                          " {fragColor = Color;}");
+                fs.Compile();
+                prog.AttachShader(vs);
+                prog.AttachShader(fs);
+                prog.Link();
+                prog.Use();
                 Uniform<Vec3f>(prog, "Color").Set(color);
                 triangles.Bind();
                 GLfloat positions[9] =

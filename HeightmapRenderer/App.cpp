@@ -106,18 +106,15 @@ void App::Start()
 {
     if(!instance) return;
 
-    Heightmap hmap;
-    hmap.loadFromFile("");
+    oglplus::Example triangle1(oglplus::Vec3f(1, 0, 0));
 
     while(true)
     {
         if(glfwWindowShouldClose(instance->appWindow->getWindow())) { break; }
 
-        //triangle1.display(this->appWindow->windowWidth(),
-        //                  this->appWindow->windowHeight());
+        triangle1.display(this->appWindow->windowWidth(),
+                          this->appWindow->windowHeight());
         // app specific code -- here --
-        hmap.display(this->appWindow->windowWidth(),
-                     this->appWindow->windowHeight());
         glfwSwapBuffers(this->appWindow->getWindow());
         glfwPollEvents();
     }
