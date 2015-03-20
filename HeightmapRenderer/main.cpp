@@ -3,6 +3,7 @@
 
 int main(void)
 {
-    App::Run();
-    return 0;
+    std::unique_ptr<App> app(App::Instance());
+    // start app
+    app->Run();
 }

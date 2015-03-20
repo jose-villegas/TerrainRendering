@@ -18,23 +18,6 @@ namespace oglplus
         public:
             Example(const Vec3f& color)
             {
-                vs.Source((GLSLString)
-                          "#version 330\n "
-                          "in vec3 Position;"
-                          "void main(void)"
-                          "{gl_Position = vec4(Position, 1.0);}");
-                vs.Compile();
-                fs.Source((GLSLString)
-                          "#version 330\n"
-                          "out vec3 fragColor; "
-                          "uniform vec3 Color; "
-                          "void main(void)"
-                          " {fragColor = Color;}");
-                fs.Compile();
-                prog.AttachShader(vs);
-                prog.AttachShader(fs);
-                prog.Link();
-                prog.Use();
                 Uniform<Vec3f>(prog, "Color").Set(color);
                 triangles.Bind();
                 GLfloat positions[9] =
@@ -58,10 +41,12 @@ namespace oglplus
     };
 }
 
-class App : private MainWindow
+class App
 {
     private:
+        MainWindow *appWindow;
         static App *instance;
+
         App(const App &rhs);
         App(const std::string &title, const unsigned int width,
             const unsigned int height);
@@ -70,12 +55,12 @@ class App : private MainWindow
         static void onKeyPress(GLFWwindow *window, int key, int scancode, int action,
                                int mods);
         // app libraries configuration
-        static void Configure();
+        void Configure();
         // app render loop
-        static void Start();
+        void Start();
     public:
         static App * Instance();
-        static void Run();
+        void Run();
 
         ~App();
 };

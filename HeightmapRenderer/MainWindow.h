@@ -24,6 +24,10 @@ class MainWindow
         void setWindowCloseCallback(void(*fptr)(void*, bool));
         void setWindowRefreshCallback(void(*fptr)(void*));
         void setWindowFocusCallback(void(*fptr)(void*, bool));
+
+        const unsigned int windowWidth() const { return width; }
+        const unsigned int windowHeight() const { return height; }
+
     protected:
         unsigned int width;
         unsigned int height;

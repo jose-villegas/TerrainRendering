@@ -1,3 +1,4 @@
+#include "Commons.h"
 #include "MainWindow.h"
 
 GLFWwindow* MainWindow::currentContext = nullptr;

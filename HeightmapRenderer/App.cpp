@@ -1,9 +1,11 @@
+#include "Commons.h"
 #include "App.h"
+#include "Heightmap.h"
 
 App * App::instance = nullptr;
 
 App::App(const std::string &title, const unsigned int width,
-         const unsigned int height) : MainWindow(title, width, height)
+         const unsigned int height)
 {
 }
 
@@ -23,23 +25,16 @@ void App::onKeyPress(GLFWwindow *window, int key, int scancode, int action,
 
 void App::Configure()
 {
-    // already configured
-    if(instance) return;
-
     // glfw error catching
     glfwSetErrorCallback(App::onError);
     // initialize glfw for context creation
     glfwInit();
-    // instantiate app thus creating rendering window
-    instance = new App("Terrain Rendering", 800, 600);
-
-    // couldn't create app instance
-    if(!instance) { exit(1); }
-
+    // setup rendering window
+    this->appWindow = new MainWindow("Terrain Rendering", 800, 600);
     // set app callbacks
-    glfwSetKeyCallback(instance->getWindow(), App::onKeyPress);
+    glfwSetKeyCallback(this->appWindow->getWindow(), App::onKeyPress);
     // make window as current rendering context
-    instance->makeCurrentContext();
+    this->appWindow->makeCurrentContext();
     // initialize glew library for opengl api access
     GLenum err = glewInit();
 
@@ -93,14 +88,15 @@ void App::Configure()
 
 App::~App()
 {
+    delete this->appWindow;
+    glfwTerminate();
 }
 
 App * App::Instance()
 {
     if(!instance)
     {
-        App::Configure();
-        return instance;
+        return instance = new App("Terrain Rendering", 800, 600);
     }
 
     return instance;
@@ -110,15 +106,19 @@ void App::Start()
 {
     if(!instance) return;
 
-    oglplus::Example triangle1(oglplus::Vec3f(1, 0, 0));
+    Heightmap hmap;
+    hmap.loadFromFile("");
 
     while(true)
     {
-        if(glfwWindowShouldClose(instance->getWindow())) { break; }
+        if(glfwWindowShouldClose(instance->appWindow->getWindow())) { break; }
 
-        triangle1.display(instance->width, instance->height);
+        //triangle1.display(this->appWindow->windowWidth(),
+        //                  this->appWindow->windowHeight());
         // app specific code -- here --
-        glfwSwapBuffers(instance->getWindow());
+        hmap.display(this->appWindow->windowWidth(),
+                     this->appWindow->windowHeight());
+        glfwSwapBuffers(this->appWindow->getWindow());
         glfwPollEvents();
     }
 }
@@ -128,12 +128,9 @@ void App::Run()
     try
     {
         // app initialization
-        App::Configure();
+        this->Configure();
         // start app loop
-        App::Start();
-        // delete window and terminate glfw context
-        delete instance;
-        glfwTerminate();
+        this->Start();
     }
     catch(std::exception& e)
     {
