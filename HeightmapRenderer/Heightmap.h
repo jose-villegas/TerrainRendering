@@ -2,42 +2,39 @@
 #include "Commons.h"
 using namespace oglplus;
 
-struct Vertex
-{
-    glm::vec3 position;
-    glm::vec2 uv;
-    glm::vec3 normal;
-    Vertex(glm::vec3 pos, glm::vec2 uv, glm::vec3 norm)
-    {
-        this->position = pos;
-        this->uv = uv;
-        this->normal = norm;
-    }
-};
-
 class Heightmap
 {
     private:
         Context gl;
-        Buffer vertexBuffer;
-        Buffer indexBuffer;
+        Buffer indexBuffer, normalBuffer, vertexBuffer, texCoordsBuffer;
+
+        VertexArray terrainMesh;
 
         VertexShader vs;
         FragmentShader fs;
         Program prog;
 
-        std::vector<int> indices;
-
         bool loaded;
         bool shaderLoaded;
-        unsigned int rows;
-        unsigned int cols;
+        int rows;
+        int cols;
 
+        // mesh data
+        std::vector<glm::vec3> vertices;
+        std::vector<glm::vec2> texCoords;
+        std::vector<glm::vec3> normals;
+        std::vector<unsigned int> indices;
+        void loadMeshData();
+        void writeIndices();
+        void writeVertexNormals(std::vector<std::vector<glm::vec3>> faceNormals[2]);
+        void writeFaceNormals(std::vector<std::vector<glm::vec3>> faceNormals[2]);
+        void writePositionsAndTexCoords();
     public:
         Heightmap();
         ~Heightmap();
 
-        bool loadFromFile(const std::string &srFilename);
-        void display(int width, int height);
+        void loadFromFile(const std::string &srFilename);
+        void display(double time);
+        void reshape(const unsigned int width, const unsigned int height);
 };
 

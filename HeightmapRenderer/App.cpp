@@ -106,15 +106,17 @@ void App::Start()
 {
     if(!instance) return;
 
-    oglplus::Example triangle1(oglplus::Vec3f(1, 0, 0));
+    //oglplus::TorusExample triangle1;
+    Heightmap hmp;
+    hmp.loadFromFile("whatever");
+    hmp.reshape(this->appWindow->windowWidth(),
+                this->appWindow->windowHeight());
 
     while(true)
     {
         if(glfwWindowShouldClose(instance->appWindow->getWindow())) { break; }
 
-        triangle1.display(this->appWindow->windowWidth(),
-                          this->appWindow->windowHeight());
-        // app specific code -- here --
+        hmp.display(glfwGetTime());
         glfwSwapBuffers(this->appWindow->getWindow());
         glfwPollEvents();
     }
@@ -129,9 +131,16 @@ void App::Run()
         // start app loop
         this->Start();
     }
-    catch(std::exception& e)
+    catch(oglplus::ProgramBuildError &e)
     {
         glfwTerminate();
+        BOOST_LOG_TRIVIAL(error) << e.Log();
+        throw std::runtime_error(e.what());
+    }
+    catch(std::exception &e)
+    {
+        glfwTerminate();
+        BOOST_LOG_TRIVIAL(error) << e.what();
         throw std::runtime_error(e.what());
     }
 }

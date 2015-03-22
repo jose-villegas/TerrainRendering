@@ -48,7 +48,7 @@
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;GLEW_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderFile>Commons.h</PrecompiledHeaderFile>
       <PrecompiledHeader>Use</PrecompiledHeader>
-      <AdditionalOptions>-Zm168 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>-Zm200 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -92,6 +92,10 @@
     <ClInclude Include="Commons.h" />
     <ClInclude Include="Heightmap.h" />
     <ClInclude Include="MainWindow.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Shaders\phong.frag" />
+    <None Include="Resources\Shaders\phong.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -45,4 +45,8 @@
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Shaders\phong.vert" />
+    <None Include="Resources\Shaders\phong.frag" />
+  </ItemGroup>
 </Project>
