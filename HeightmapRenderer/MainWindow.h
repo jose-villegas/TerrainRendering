@@ -25,12 +25,12 @@ class MainWindow
         void setWindowRefreshCallback(void(*fptr)(void*));
         void setWindowFocusCallback(void(*fptr)(void*, bool));
 
-        const unsigned int windowWidth() const { return width; }
-        const unsigned int windowHeight() const { return height; }
+        const unsigned int windowWidth() { glfwGetWindowSize(this->window.get(), &this->width, &this->height); return width; }
+        const unsigned int windowHeight() { glfwGetWindowSize(this->window.get(), &this->width, &this->height); return height; }
 
     protected:
-        unsigned int width;
-        unsigned int height;
+        int width;
+        int height;
         std::string title;
         GLFWmonitor *monitor;
         GLFWwindow *share;

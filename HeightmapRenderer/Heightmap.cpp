@@ -119,7 +119,8 @@ void Heightmap::writePositionsAndTexCoords()
         {
             float colScale = (float)j / (cols - 1);
             float rowScale = (float)i / (rows - 1);
-            float vertexHeight = 0.0;
+            float vertexHeight = std::sin((float)i / (rows * 0.005)) / rows
+                                 + std::cos((float)j / (cols * 0.005)) / cols;
             // assign respective mesh vertex values and texture coords per pixel
             vertices[i * cols + j] = glm::vec3(-0.5f + colScale, vertexHeight,
                                                -0.5f + rowScale);
@@ -161,14 +162,6 @@ void Heightmap::loadFromFile(const std::string &srFilename)
     vertexBuffer.Bind(Buffer::Target::Array);
     {
         GLuint nPerVertex = vertices[0].length();
-        //std::vector<GLfloat> verts;
-        //for (auto it = vertices.begin(); it != vertices.end(); ++it)
-        //{
-        //    verts.push_back(it->x);
-        //    verts.push_back(it->y);
-        //    verts.push_back(it->z);
-        //}
-        // upload the data
         Buffer::Data(Buffer::Target::Array, vertices);
         // setup the vertex attribs array for the vertices
         (prog | 0).Setup<GLfloat>(nPerVertex).Enable();
@@ -213,16 +206,20 @@ void Heightmap::loadFromFile(const std::string &srFilename)
 
 void Heightmap::display(double time)
 {
-    time = time * 0.1;
     gl.Clear().ColorBuffer().DepthBuffer();
     //
     // set the matrix for camera orbiting the origin
     Uniform<Mat4f>(prog, "CameraMatrix").Set(
-        CamMatrixf::Orbiting(
+        //CamMatrixf::Orbiting(
+        //    Vec3f(),
+        //    0.75,
+        //    FullCircles(time / 17.0),
+        //    Degrees(SineWave(time / 19.0) * 90)
+        //)
+        CamMatrixf::LookingAt(
+            Vec3f(0.0, 1.0 / 8, 1.0 / 8),
             Vec3f(),
-            0.1,
-            FullCircles(time / 17.0),
-            Degrees(SineWave(time / 19.0) * 90)
+            Vec3f(0, 1, 0)
         )
     );
     //Uniform<Mat4f>(prog, "CameraMatrix")

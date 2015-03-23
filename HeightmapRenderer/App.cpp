@@ -109,13 +109,13 @@ void App::Start()
     //oglplus::TorusExample triangle1;
     Heightmap hmp;
     hmp.loadFromFile("whatever");
-    hmp.reshape(this->appWindow->windowWidth(),
-                this->appWindow->windowHeight());
 
     while(true)
     {
         if(glfwWindowShouldClose(instance->appWindow->getWindow())) { break; }
 
+        hmp.reshape(this->appWindow->windowWidth(),
+                    this->appWindow->windowHeight());
         hmp.display(glfwGetTime());
         glfwSwapBuffers(this->appWindow->getWindow());
         glfwPollEvents();
