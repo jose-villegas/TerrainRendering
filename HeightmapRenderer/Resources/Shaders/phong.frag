@@ -2,25 +2,38 @@
 
 in vec3 vertNormal;
 in vec3 vertViewDir;
+in vec3 lightPos;
+in float height;
 
 out vec4 fragColor;
-uniform vec3 LightPos[3];
+
+float blinnPhongSpecular(vec3 lightDirection, vec3 viewDirection,
+                         vec3 surfaceNormal, float shininess)
+{
+    //Calculate Blinn-Phong power
+    vec3 H = normalize(viewDirection + lightDirection);
+    return pow(max(0.0, dot(surfaceNormal, H)), shininess);
+}
+
+float lambert(vec3 surfaceNormal, vec3 lightDirection)
+{
+    return max(dot(surfaceNormal, lightDirection), 0.0f);
+}
 
 void main(void)
 {
+    vec3 matColor = vec3(log(height + 1), 0.1, 0.1);
     vec3 normal = normalize(vertNormal);
     float amb = 0.2;
     float diff = 0.0;
     float spec = 0.0;
+    // calculate shading
+    diff += lambert(normal, lightPos);
 
-    for(int i = 0; i != 3; ++i)
+    if(diff > 0.0f)
     {
-        diff += max(dot(normal,  LightPos[i]) / dot(LightPos[i], LightPos[i]), 0.0);
-        float k = dot(normal, LightPos[i]);
-        vec3 r = 2.0 * k * normal - LightPos[i];
-        spec += pow(max(dot(normalize(r), vertViewDir), 0.0), 32.0 * dot(r, r));
+        spec += blinnPhongSpecular(lightPos, vertViewDir, normal, 16.0f);
     }
 
-    fragColor = vec4(vec3(0.8, 0.1, 0.2), 1.0) * (amb + diff) + vec4(1.0, 1.0, 1.0,
-                1.0) * spec;
+    fragColor = vec4(matColor, 1.0) * ((diff + spec) + amb);
 }

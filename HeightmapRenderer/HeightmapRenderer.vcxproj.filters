@@ -48,5 +48,8 @@
   <ItemGroup>
     <None Include="Resources\Shaders\phong.vert" />
     <None Include="Resources\Shaders\phong.frag" />
+    <None Include="Resources\Shaders\terrain.vert" />
+    <None Include="Resources\Shaders\terrain.frag" />
+    <None Include="Resources\Shaders\base.frag" />
   </ItemGroup>
 </Project>

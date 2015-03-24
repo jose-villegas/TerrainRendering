@@ -94,8 +94,11 @@
     <ClInclude Include="MainWindow.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Resources\Shaders\base.frag" />
     <None Include="Resources\Shaders\phong.frag" />
     <None Include="Resources\Shaders\phong.vert" />
+    <None Include="Resources\Shaders\terrain.frag" />
+    <None Include="Resources\Shaders\terrain.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

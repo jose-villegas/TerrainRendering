@@ -3,6 +3,7 @@
 #include <GLFW/glfw3.h>
 // pre-processors
 #define GLM_FORCE_RADIANS
+#define _USE_MATH_DEFINES
 // ogl headers c++ wrapper on opengl
 #include <oglplus/all.hpp>
 #include <oglplus/opt/smart_enums.hpp>
@@ -19,6 +20,7 @@
 #include <sstream>
 #include <vector>
 #include <algorithm>
+#include <math.h>
 // glm math library headers
 #include <glm/glm.hpp>
 #include <glm/common.hpp>
@@ -41,7 +43,6 @@
 #include <boost/log/sources/severity_logger.hpp>
 #include <boost/log/sources/record_ostream.hpp>
 #include <boost/log/support/date_time.hpp>
-#include <boost/math/constants/constants.hpp>
 // parallel patterns library (ppl) from Windows for concurrency and parallelism
 #include <ppl.h>
 // namespace assignations

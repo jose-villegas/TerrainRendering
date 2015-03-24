@@ -119,8 +119,8 @@ void Heightmap::writePositionsAndTexCoords()
         {
             float colScale = (float)j / (cols - 1);
             float rowScale = (float)i / (rows - 1);
-            float vertexHeight = std::sin((float)i / (rows * 0.005)) / rows
-                                 + std::cos((float)j / (cols * 0.005)) / cols;
+            float vertexHeight = (std::sin((i * M_PI) / rows)
+                                  + std::sin((j * M_PI) / cols)) / 4;
             // assign respective mesh vertex values and texture coords per pixel
             vertices[i * cols + j] = glm::vec3(-0.5f + colScale, vertexHeight,
                                                -0.5f + rowScale);
@@ -144,6 +144,17 @@ Heightmap::Heightmap()
     // link and use it
     prog.Link();
     prog.Use();
+    // testing
+    VertexShader vss;
+    FragmentShader fss;
+    Program pp;
+    vss.Source(GLSLSource::FromFile("Resources/Shaders/terrain.vert"));
+    vss.Compile();
+    fss.Source(GLSLSource::FromFile("Resources/Shaders/terrain.frag"));
+    fss.Compile();
+    pp.AttachShader(vss);
+    pp.AttachShader(fss);
+    pp.Link();
 }
 
 
@@ -188,12 +199,9 @@ void Heightmap::loadFromFile(const std::string &srFilename)
         gl.Enable(Capability::PrimitiveRestart);
         gl.PrimitiveRestartIndex(rows * cols);
     }
-    Uniform<Vec3f> light_pos(prog, "LightPos");
-    light_pos[0].Set(Vec3f(2.0f, -1.0f, 0.0f));
-    light_pos[1].Set(Vec3f(0.0f, 3.0f, -1.0f));
-    light_pos[2].Set(Vec3f(0.0f, -1.0f, 4.0f));
+    Uniform<Vec3f>(prog, "LightPos").Set(Vec3f(0.0, 1.0f, 0.0));
     //
-    //gl.ClearColor(0.8f, 0.8f, 0.7f, 0.0f);
+    gl.ClearColor(0.8f, 0.8f, 0.7f, 0.0f);
     //gl.ClearDepth(1.0f);
     //gl.Enable(Capability::DepthTest);
     //gl.Enable(Capability::CullFace);
@@ -207,7 +215,7 @@ void Heightmap::loadFromFile(const std::string &srFilename)
 void Heightmap::display(double time)
 {
     gl.Clear().ColorBuffer().DepthBuffer();
-    //
+    // Uniform<Vec3f>(prog, "LightPos").Set(Vec3f(0.0, 0.5f, std::sin(time)));
     // set the matrix for camera orbiting the origin
     Uniform<Mat4f>(prog, "CameraMatrix").Set(
         //CamMatrixf::Orbiting(
@@ -217,7 +225,7 @@ void Heightmap::display(double time)
         //    Degrees(SineWave(time / 19.0) * 90)
         //)
         CamMatrixf::LookingAt(
-            Vec3f(0.0, 1.0 / 8, 1.0 / 8),
+            Vec3f(0.0, 1.0 / 1.0, 1.0 / 1.0),
             Vec3f(),
             Vec3f(0, 1, 0)
         )
