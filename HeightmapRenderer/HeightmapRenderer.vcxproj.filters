@@ -30,6 +30,9 @@
     <ClCompile Include="Commons.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="TransformationMatrices.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MainWindow.h">
@@ -44,6 +47,9 @@
     <ClInclude Include="Commons.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="TransformationMatrices.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\Shaders\phong.vert" />
@@ -51,5 +57,8 @@
     <None Include="Resources\Shaders\terrain.vert" />
     <None Include="Resources\Shaders\terrain.frag" />
     <None Include="Resources\Shaders\base.frag" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="app_0.log" />
   </ItemGroup>
 </Project>

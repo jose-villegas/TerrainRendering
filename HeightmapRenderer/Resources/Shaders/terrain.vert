@@ -1,42 +1,5 @@
 #version 330
 
-const int MAX_POINT_LIGHTS = 2;
-const int MAX_SPOT_LIGHTS = 2;
-
-struct Attenuation
-{
-    float constant;
-    float linear;
-    float exponential;
-};
-
-struct BaseLight
-{
-    vec3 color;
-    float intensity;
-};
-
-struct DirectionalLight
-{
-    BaseLight base;
-    vec3 direction;
-};
-
-struct PointLight
-{
-    BaseLight base;
-    vec3 position;
-    Attenuation attenuation;
-};
-
-struct SpotLight
-{
-    PointLight base;
-    vec3 direction;
-    float cosInnerAngle;
-    float cosOuterAngle;
-};
-
 uniform struct Matrices 
 {
     mat4 modelView;
@@ -46,15 +9,6 @@ uniform struct Matrices
     mat4 projection;
     mat4 normal;
 } matrix;
-
-uniform struct Lights 
-{
-    SpotLight spot[MAX_SPOT_LIGHTS];
-    PointLight point[MAX_POINT_LIGHTS];
-    DirectionalLight directional;
-    uint spotLightCount;
-    uint pointLightCount;
-} light;
 
 // Input vertex data
 layout(location = 0) in vec3 vertexPosition;

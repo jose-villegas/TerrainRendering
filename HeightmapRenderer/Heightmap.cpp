@@ -1,5 +1,6 @@
 #include "Commons.h"
 #include "Heightmap.h"
+#include "TransformationMatrices.h"
 
 void Heightmap::loadMeshData()
 {
@@ -119,8 +120,9 @@ void Heightmap::writePositionsAndTexCoords()
         {
             float colScale = (float)j / (cols - 1);
             float rowScale = (float)i / (rows - 1);
-            float vertexHeight = (std::sin((i * M_PI) / rows)
-                                  + std::sin((j * M_PI) / cols)) / 4;
+            //float vertexHeight = (std::sin((i * M_PI) / rows)
+            //                      + std::sin((j * M_PI) / cols)) / 4;
+            float vertexHeight = (float)j / cols * 0.5;
             // assign respective mesh vertex values and texture coords per pixel
             vertices[i * cols + j] = glm::vec3(-0.5f + colScale, vertexHeight,
                                                -0.5f + rowScale);
@@ -131,11 +133,11 @@ void Heightmap::writePositionsAndTexCoords()
 
 Heightmap::Heightmap()
 {
-    vs.Source(GLSLSource::FromFile("Resources/Shaders/phong.vert"));
+    vs.Source(GLSLSource::FromFile("Resources/Shaders/terrain.vert"));
     // compile it
     vs.Compile();
     // set the fragment shader source
-    fs.Source(GLSLSource::FromFile("Resources/Shaders/phong.frag"));
+    fs.Source(GLSLSource::FromFile("Resources/Shaders/terrain.frag"));
     // compile it
     fs.Compile();
     // attach the shaders to the program
@@ -144,17 +146,6 @@ Heightmap::Heightmap()
     // link and use it
     prog.Link();
     prog.Use();
-    // testing
-    VertexShader vss;
-    FragmentShader fss;
-    Program pp;
-    vss.Source(GLSLSource::FromFile("Resources/Shaders/terrain.vert"));
-    vss.Compile();
-    fss.Source(GLSLSource::FromFile("Resources/Shaders/terrain.frag"));
-    fss.Compile();
-    pp.AttachShader(vss);
-    pp.AttachShader(fss);
-    pp.Link();
 }
 
 
@@ -196,11 +187,17 @@ void Heightmap::loadFromFile(const std::string &srFilename)
     indexBuffer.Bind(Buffer::Target::ElementArray);
     {
         Buffer::Data(Buffer::Target::ElementArray, indices);
-        gl.Enable(Capability::PrimitiveRestart);
-        gl.PrimitiveRestartIndex(rows * cols);
+        //gl.Enable(Capability::PrimitiveRestart);
+        //gl.PrimitiveRestartIndex(rows * cols);
     }
-    Uniform<Vec3f>(prog, "LightPos").Set(Vec3f(0.0, 1.0f, 0.0));
-    //
+    Uniform<GLfloat>(prog, "light.directional.base.intensity").Set(1.0);
+    Uniform<glm::vec3>(prog, "light.directional.base.color").Set(
+        glm::vec3(1.0)
+    );
+    Uniform<glm::vec3>(prog, "light.directional.direction").Set(
+        glm::vec3(0.5, 0.3, 0.7)
+    );
+    // Uniform<Vec3f>(prog, "LightPos").Set(Vec3f(0.0, 1.0f, 0.0));
     gl.ClearColor(0.8f, 0.8f, 0.7f, 0.0f);
     //gl.ClearDepth(1.0f);
     //gl.Enable(Capability::DepthTest);
@@ -214,32 +211,36 @@ void Heightmap::loadFromFile(const std::string &srFilename)
 
 void Heightmap::display(double time)
 {
+    // clean color and depth buff
     gl.Clear().ColorBuffer().DepthBuffer();
-    // Uniform<Vec3f>(prog, "LightPos").Set(Vec3f(0.0, 0.5f, std::sin(time)));
-    // set the matrix for camera orbiting the origin
-    Uniform<Mat4f>(prog, "CameraMatrix").Set(
-        //CamMatrixf::Orbiting(
-        //    Vec3f(),
-        //    0.75,
-        //    FullCircles(time / 17.0),
-        //    Degrees(SineWave(time / 19.0) * 90)
-        //)
-        CamMatrixf::LookingAt(
-            Vec3f(0.0, 1.0 / 1.0, 1.0 / 1.0),
-            Vec3f(),
-            Vec3f(0, 1, 0)
+    // set scene matrixes
+    TransformationMatrices::Model(
+        glm::mat4(1)
+    );
+    TransformationMatrices::View(
+        glm::lookAt(
+            glm::vec3(0, 0.75, 0.75),
+            glm::vec3(0, 0, 0),
+            glm::vec3(0, 1, 0)
         )
     );
-    //Uniform<Mat4f>(prog, "CameraMatrix")
-    //.Set
-    //(
-    //    CamMatrixf::LookingAt
-    //    (
-    //        Vec3f(0, 0, 1),
-    //        Vec3f(0),
-    //        Vec3f(0, 1, 0)
-    //    )
-    //);
+    Uniform<glm::mat4>(prog, "matrix.modelViewProjection").Set(
+        TransformationMatrices::ModelViewProjection()
+    );
+    Uniform<glm::mat4>(prog, "matrix.modelView").Set(
+        TransformationMatrices::ModelView()
+    );
+    Uniform<glm::mat4>(prog, "matrix.normal").Set(
+        TransformationMatrices::Normal()
+    );
+    Uniform<GLfloat>(prog, "light.directional.base.intensity").Set(1.0);
+    Uniform<glm::vec3>(prog, "light.directional.base.color").Set(
+        glm::vec3(1.0)
+    );
+    Uniform<glm::vec3>(prog, "light.directional.direction").Set(
+        glm::vec3(0.5, 0.3, 0.7)
+    );
+    // draw mesh
     gl.DrawElements(PrimitiveType::TriangleStrip, indices.size(),
                     DataType::UnsignedInt);
 }
@@ -248,11 +249,12 @@ void Heightmap::reshape(const unsigned int width, const unsigned int height)
 {
     gl.Viewport(width, height);
     prog.Use();
-    Uniform<Mat4f>(prog, "ProjectionMatrix").Set(
-        CamMatrixf::PerspectiveX(
-            Degrees(60),
-            double(width) / height,
-            0.01, 30
+    TransformationMatrices::Projection(
+        glm::perspective(
+            glm::radians(60.0f),
+            (float)width / height,
+            0.01f, 30.0f
         )
     );
+    // Uniform<glm::mat4>(prog, "matrix.projection").Set(TransformationMatrices::Projection());
 }

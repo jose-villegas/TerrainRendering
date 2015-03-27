@@ -1,5 +1,4 @@
 #pragma once
-#include "Commons.h"
 using namespace oglplus;
 
 class Heightmap

@@ -39,6 +39,19 @@ struct SpotLight
     float cosOuterAngle;
 };
 
+uniform struct Material 
+{
+    vec3 specular;
+    vec3 diffuse;
+    vec3 ambient;
+    // material opacity 0..1
+    float opacity;
+    // phong shininess
+    float shininess;
+    // scales the specular color
+    float shininessStrength;
+} material;
+
 uniform struct Matrices
 {
     mat4 modelView;
@@ -55,8 +68,8 @@ uniform struct Lights
     PointLight point[MAX_POINT_LIGHTS];
     DirectionalLight directional;
     float ambientCoefficient;
-    uint spotLightCount;
-    uint pointLightCount;
+    int spotLightCount;
+    int pointLightCount;
 } light;
 
 float lambertDiffuse(vec3 lightDirection, vec3 surfaceNormal)
@@ -183,6 +196,30 @@ vec3 calculateDirectionalLight(DirectionalLight lightSource, vec3 position,
     return ambient + (specular + diffuse);
 }
 
+// Vertex shader inputs
+in vec2 texCoord;
+in vec3 normal;
+in vec3 position;
+
+layout (location = 0) out vec4 fragColor;
+
 void main()
 {
+    vec3 surfaceNormal = normalize(normal);
+    vec3 surfaceColor = vec3(0.0, 1.0, 0.0);
+    vec3 materialSpecular = vec3(1.0) - surfaceColor;
+    // total light from all light sources
+    vec3 totalLight = calculateDirectionalLight(light.directional, position, surfaceNormal, surfaceColor, materialSpecular);
+
+    for(int i = 0; i < light.pointLightCount; i++)
+    {
+        totalLight += calculatePointLight(light.point[i], position, surfaceNormal, surfaceColor, materialSpecular);
+    }
+
+    for(int i = 0; i < light.spotLightCount; i++)
+    {
+        totalLight += calculateSpotLight(light.spot[i], position, surfaceNormal, surfaceColor, materialSpecular);
+    }
+
+    fragColor = vec4(totalLight, 1.0f);
 }

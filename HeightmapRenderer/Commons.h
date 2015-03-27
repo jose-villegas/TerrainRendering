@@ -3,15 +3,16 @@
 #include <GLFW/glfw3.h>
 // pre-processors
 #define GLM_FORCE_RADIANS
+#define GLM_FORCE_PURE
 #define _USE_MATH_DEFINES
 // ogl headers c++ wrapper on opengl
 #include <oglplus/all.hpp>
 #include <oglplus/opt/smart_enums.hpp>
 #include <oglplus/bound/texture.hpp>
 #include <oglplus/buffer_usage.hpp>
-#include <oglplus/interop/glm.hpp>
 #include <oglplus/glsl_source.hpp>
 #include <oglplus/glsl_string.hpp>
+#include <oglplus/interop/glm.hpp>
 // standard and stl library headers
 #include <iostream>
 #include <stdexcept>
