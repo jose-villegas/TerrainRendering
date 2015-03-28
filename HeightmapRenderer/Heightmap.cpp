@@ -113,6 +113,16 @@ void Heightmap::writePositionsAndTexCoords()
 {
     float textureU = (float)cols * 0.1f;
     float textureV = (float)rows * 0.1f;
+    float maxValue = std::numeric_limits<float>::min();
+    float minValue = std::numeric_limits<float>::max();
+    noise::module::Perlin noiseGen;
+    noise::utils::NoiseMap heightmap;
+    noise::utils::NoiseMapBuilderPlane heightmapBuilder;
+    heightmapBuilder.SetSourceModule(noiseGen);
+    heightmapBuilder.SetDestNoiseMap(heightmap);
+    heightmapBuilder.SetDestSize(rows, cols);
+    heightmapBuilder.SetBounds(2.0, 6.0, 1.0, 5.0);
+    heightmapBuilder.Build();
 
     for(int i = 0; i < rows; i++)
     {
@@ -120,15 +130,27 @@ void Heightmap::writePositionsAndTexCoords()
         {
             float colScale = (float)j / (cols - 1);
             float rowScale = (float)i / (rows - 1);
-            //float vertexHeight = (std::sin((i * M_PI) / rows)
-            //                      + std::sin((j * M_PI) / cols)) / 4;
-            float vertexHeight = (float)j / cols * 0.5;
+            float vertexHeight = heightmap.GetValue(i, j);
+            maxValue = vertexHeight > maxValue ? vertexHeight : maxValue;
+            minValue = vertexHeight <= minValue ? vertexHeight : minValue;
             // assign respective mesh vertex values and texture coords per pixel
-            vertices[i * cols + j] = glm::vec3(-0.5f + colScale, vertexHeight,
-                                               -0.5f + rowScale);
+            vertices[i * cols + j] = glm::vec3(-0.5f + colScale,
+                                               vertexHeight,
+                                               -0.5f + rowScale
+                                              );
             texCoords[i * cols + j] = glm::vec2(textureU * colScale, textureV * rowScale);
         }
     }
+
+    // scale all values to 0 - 1
+    std::for_each(vertices.begin(), vertices.end(),
+                  [minValue, maxValue](glm::vec3 & value)
+    {
+        value.y += std::abs(minValue);
+        value.y /= std::abs(minValue) + maxValue;
+        // for testing
+        value.y /= 3;
+    });
 }
 
 Heightmap::Heightmap()
@@ -155,8 +177,8 @@ Heightmap::~Heightmap()
 
 void Heightmap::loadFromFile(const std::string &srFilename)
 {
-    rows = 512;
-    cols = 512;
+    rows = 128;
+    cols = 128;
     loadMeshData();
     terrainMesh.Bind();
     prog.Use();
@@ -187,23 +209,43 @@ void Heightmap::loadFromFile(const std::string &srFilename)
     indexBuffer.Bind(Buffer::Target::ElementArray);
     {
         Buffer::Data(Buffer::Target::ElementArray, indices);
-        //gl.Enable(Capability::PrimitiveRestart);
-        //gl.PrimitiveRestartIndex(rows * cols);
+        gl.Enable(Capability::PrimitiveRestart);
+        gl.PrimitiveRestartIndex(rows * cols);
     }
-    Uniform<GLfloat>(prog, "light.directional.base.intensity").Set(1.0);
-    Uniform<glm::vec3>(prog, "light.directional.base.color").Set(
-        glm::vec3(1.0)
+    Uniform<GLfloat>(prog, "directionalLight.base.intensity").Set(
+        1.0f
     );
-    Uniform<glm::vec3>(prog, "light.directional.direction").Set(
-        glm::vec3(0.5, 0.3, 0.7)
+    Uniform<glm::vec3>(prog, "directionalLight.base.color").Set(
+        glm::vec3(1.0f)
+    );
+    Uniform<glm::vec3>(prog, "directionalLight.direction").Set(
+        glm::vec3(0.5f, 0.7f, 0.7f)
+    );
+    Uniform<GLfloat>(prog, "lightParams.ambientCoefficient").Set(
+        0.1f
+    );
+    Uniform<GLint>(prog, "lightParams.spotLightCount").Set(
+        0
+    );
+    Uniform<GLint>(prog, "lightParams.pointLightCount").Set(
+        0
+    );
+    Uniform<GLfloat>(prog, "material.shininess").Set(
+        32
+    );
+    Uniform<glm::vec3>(prog, "material.specular").Set(
+        glm::vec3(0.2, 0.95, 0.15)
+    );
+    Uniform<GLfloat>(prog, "material.shininessStrength").Set(
+        0.065f
     );
     // Uniform<Vec3f>(prog, "LightPos").Set(Vec3f(0.0, 1.0f, 0.0));
     gl.ClearColor(0.8f, 0.8f, 0.7f, 0.0f);
     //gl.ClearDepth(1.0f);
-    //gl.Enable(Capability::DepthTest);
-    //gl.Enable(Capability::CullFace);
-    //gl.FrontFace(FaceOrientation::CCW);
-    //gl.CullFace(Face::Back);
+    gl.Enable(Capability::DepthTest);
+    gl.Enable(Capability::CullFace);
+    gl.FrontFace(FaceOrientation::CW);
+    gl.CullFace(Face::Back);
     //wireframe
     glPolygonMode(GL_FRONT, GL_LINE);
     glPolygonMode(GL_BACK, GL_LINE);
@@ -211,16 +253,23 @@ void Heightmap::loadFromFile(const std::string &srFilename)
 
 void Heightmap::display(double time)
 {
+    //Uniform<glm::vec3>(prog, "directionalLight.direction").Set(
+    //    glm::vec3(
+    //        std::cos(time / 1000),
+    //        1.0,
+    //        std::sin(time / 1000)
+    //    )
+    //);
     // clean color and depth buff
     gl.Clear().ColorBuffer().DepthBuffer();
     // set scene matrixes
     TransformationMatrices::Model(
-        glm::mat4(1)
+        (glm::mat4)glm::scale(glm::mat4(1.0), glm::vec3(1.0, 1.0, 1.0))
     );
     TransformationMatrices::View(
         glm::lookAt(
-            glm::vec3(0, 0.75, 0.75),
-            glm::vec3(0, 0, 0),
+            glm::vec3(std::cos(time * 0.25), 1, std::sin(time * 0.25)),
+            glm::vec3(0, 0.0, 0),
             glm::vec3(0, 1, 0)
         )
     );
@@ -232,13 +281,6 @@ void Heightmap::display(double time)
     );
     Uniform<glm::mat4>(prog, "matrix.normal").Set(
         TransformationMatrices::Normal()
-    );
-    Uniform<GLfloat>(prog, "light.directional.base.intensity").Set(1.0);
-    Uniform<glm::vec3>(prog, "light.directional.base.color").Set(
-        glm::vec3(1.0)
-    );
-    Uniform<glm::vec3>(prog, "light.directional.direction").Set(
-        glm::vec3(0.5, 0.3, 0.7)
     );
     // draw mesh
     gl.DrawElements(PrimitiveType::TriangleStrip, indices.size(),
@@ -256,5 +298,7 @@ void Heightmap::reshape(const unsigned int width, const unsigned int height)
             0.01f, 30.0f
         )
     );
-    // Uniform<glm::mat4>(prog, "matrix.projection").Set(TransformationMatrices::Projection());
+    //Uniform<glm::mat4>(prog, "matrix.projection").Set(
+    //    TransformationMatrices::Projection()
+    //);
 }

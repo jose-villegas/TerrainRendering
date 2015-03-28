@@ -13,6 +13,9 @@
 #include <oglplus/glsl_source.hpp>
 #include <oglplus/glsl_string.hpp>
 #include <oglplus/interop/glm.hpp>
+// coherent noise generation
+#include <noise/noise.h>
+#include <noiseutils.h>
 // standard and stl library headers
 #include <iostream>
 #include <stdexcept>

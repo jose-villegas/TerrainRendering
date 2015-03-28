@@ -19,10 +19,13 @@ layout(location = 2) in vec3 vertexNormal;
 out vec2 texCoord;
 out vec3 normal;
 out vec3 position;
+out float height;
 
 void main()
 {
     vec4 vertexPos = vec4(vertexPosition, 1.0f);
+
+    height = vertexPosition.y * 3;
 
     texCoord = vertexTexCoords;
     normal = normalize(matrix.normal * vec4(vertexNormal, 0.0f)).xyz;

@@ -18,28 +18,28 @@ struct BaseLight
     float intensity;
 };
 
-struct DirectionalLight
+uniform struct DirectionalLight
 {
     BaseLight base;
     vec3 direction;
-};
+} directionalLight;
 
-struct PointLight
+uniform struct PointLight
 {
     BaseLight base;
     vec3 position;
     Attenuation attenuation;
-};
+} pointLight[MAX_POINT_LIGHTS];
 
-struct SpotLight
+uniform struct SpotLight
 {
     PointLight base;
     vec3 direction;
     float cosInnerAngle;
     float cosOuterAngle;
-};
+} spotLight[MAX_SPOT_LIGHTS];
 
-uniform struct Material 
+uniform struct Material
 {
     vec3 specular;
     vec3 diffuse;
@@ -62,15 +62,12 @@ uniform struct Matrices
     mat4 normal;
 } matrix;
 
-uniform struct Lights
+uniform struct LightParams
 {
-    SpotLight spot[MAX_SPOT_LIGHTS];
-    PointLight point[MAX_POINT_LIGHTS];
-    DirectionalLight directional;
     float ambientCoefficient;
     int spotLightCount;
     int pointLightCount;
-} light;
+} lightParams;
 
 float lambertDiffuse(vec3 lightDirection, vec3 surfaceNormal)
 {
@@ -120,7 +117,7 @@ vec3 calculatePointLight(PointLight lightSource, vec3 position,
                                       + lightSource.attenuation.linear * lightDistance
                                       + lightSource.attenuation.quadratic * lightDistance * lightDistance);
     // calculate lighting
-    vec3 ambient = surfaceColor * light.ambientCoefficient *
+    vec3 ambient = surfaceColor * lightParams.ambientCoefficient *
                    lightSource.base.color;
     vec3 specular = vec3(0.0f);
     vec3 diffuse = vec3(0.0f);
@@ -133,11 +130,11 @@ vec3 calculatePointLight(PointLight lightSource, vec3 position,
                   diffuseFactor;
         // calculate blinn-phong specular
         vec3 viewDirection = normalize(-position);
-        float specularFactor = blinnPhongSpecular(lightDirection, viewDirection,
-                               surfaceNormal, 16);
 
-        if(specularFactor > 0.0f)
+        if(material.shininessStrength > 0.0f)
         {
+            float specularFactor = blinnPhongSpecular(lightDirection, viewDirection,
+                                   surfaceNormal, material.shininess);
             specular = lightSource.base.color * lightSource.base.intensity *
                        materialSpecular * specularFactor;
         }
@@ -170,7 +167,7 @@ vec3 calculateDirectionalLight(DirectionalLight lightSource, vec3 position,
                                vec3 surfaceNormal, vec3 surfaceColor, vec3 materialSpecular)
 {
     // calculate lighting
-    vec3 ambient = surfaceColor * light.ambientCoefficient *
+    vec3 ambient = surfaceColor * lightParams.ambientCoefficient *
                    lightSource.base.color;
     vec3 specular = vec3(0.0f);
     vec3 diffuse = vec3(0.0f);
@@ -183,11 +180,11 @@ vec3 calculateDirectionalLight(DirectionalLight lightSource, vec3 position,
                   diffuseFactor;
         // calculate blinn-phong specular
         vec3 viewDirection = normalize(-position);
-        float specularFactor = blinnPhongSpecular(lightSource.direction, viewDirection,
-                               surfaceNormal, 16);
 
-        if(specularFactor > 0.0f)
+        if(material.shininessStrength > 0.0f)
         {
+            float specularFactor = blinnPhongSpecular(lightSource.direction, viewDirection,
+                                   surfaceNormal, material.shininess);
             specular = lightSource.base.color * lightSource.base.intensity *
                        materialSpecular * specularFactor;
         }
@@ -200,25 +197,62 @@ vec3 calculateDirectionalLight(DirectionalLight lightSource, vec3 position,
 in vec2 texCoord;
 in vec3 normal;
 in vec3 position;
+in float height;
 
-layout (location = 0) out vec4 fragColor;
+layout(location = 0) out vec4 fragColor;
+
+vec3 heightSample[3];
 
 void main()
 {
+    heightSample[0] = vec3(0.3, 0.05, 0.1);
+    heightSample[1] = vec3(0.1, 0.6, 0.4);
+    heightSample[2] = vec3(0.7, 0.9, 0.8);
     vec3 surfaceNormal = normalize(normal);
-    vec3 surfaceColor = vec3(0.0, 1.0, 0.0);
-    vec3 materialSpecular = vec3(1.0) - surfaceColor;
-    // total light from all light sources
-    vec3 totalLight = calculateDirectionalLight(light.directional, position, surfaceNormal, surfaceColor, materialSpecular);
+    vec3 surfaceColor = vec3(0.0, 0.0, 0.0);
+    float fScale = height;
+    const float fRange1 = 0.15f;
+    const float fRange2 = 0.3f;
+    const float fRange3 = 0.65f;
+    const float fRange4 = 0.85f;
 
-    for(int i = 0; i < light.pointLightCount; i++)
+    if(fScale >= 0.0 && fScale <= fRange1) surfaceColor = heightSample[0];
+    else if(fScale <= fRange2)
     {
-        totalLight += calculatePointLight(light.point[i], position, surfaceNormal, surfaceColor, materialSpecular);
+        fScale -= fRange1;
+        fScale /= (fRange2 - fRange1);
+        float fScale2 = fScale;
+        fScale = 1.0 - fScale;
+        surfaceColor += heightSample[0] * fScale;
+        surfaceColor += heightSample[1] * fScale2;
+    }
+    else if(fScale <= fRange3) surfaceColor = heightSample[1];
+    else if(fScale <= fRange4)
+    {
+        fScale -= fRange3;
+        fScale /= (fRange4 - fRange3);
+        float fScale2 = fScale;
+        fScale = 1.0 - fScale;
+        surfaceColor += heightSample[1] * fScale;
+        surfaceColor += heightSample[2] * fScale2;
+    }
+    else surfaceColor = heightSample[2];
+
+    vec3 materialSpecular = material.specular * material.shininessStrength;
+    // total light from all light sources
+    vec3 totalLight = calculateDirectionalLight(directionalLight, position,
+                      surfaceNormal, surfaceColor, materialSpecular);
+
+    for(int i = 0; i < lightParams.pointLightCount; i++)
+    {
+        totalLight += calculatePointLight(pointLight[i], position, surfaceNormal,
+                                          surfaceColor, materialSpecular);
     }
 
-    for(int i = 0; i < light.spotLightCount; i++)
+    for(int i = 0; i < lightParams.spotLightCount; i++)
     {
-        totalLight += calculateSpotLight(light.spot[i], position, surfaceNormal, surfaceColor, materialSpecular);
+        totalLight += calculateSpotLight(spotLight[i], position, surfaceNormal,
+                                         surfaceColor, materialSpecular);
     }
 
     fragColor = vec4(totalLight, 1.0f);
