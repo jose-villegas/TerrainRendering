@@ -4,6 +4,7 @@
 #include "TransformationMatrices.h"
 #include "Terrain.h"
 
+Terrain * App::terrain = nullptr;
 App * App::instance = nullptr;
 
 App::App(const std::string &title, const unsigned int width,
@@ -16,12 +17,30 @@ void App::onError(int code, const char * description)
     throw std::runtime_error(description);
 }
 
+int counter;
+float stopRot = 0.0;
+
 void App::onKeyPress(GLFWwindow *window, int key, int scancode, int action,
                      int mods)
 {
     if(key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
     {
         glfwSetWindowShouldClose(window, GL_TRUE);
+    }
+
+    if(key == GLFW_KEY_W && action == GLFW_PRESS)
+    {
+        terrain->test(++counter);
+    }
+
+    if(key == GLFW_KEY_S && action == GLFW_PRESS)
+    {
+        terrain->test(--counter);
+    }
+
+    if(key == GLFW_KEY_P && action == GLFW_PRESS)
+    {
+        stopRot ? stopRot = 0 : stopRot = glfwGetTime();
     }
 }
 
@@ -55,6 +74,7 @@ void App::Configure()
         throw std::runtime_error((const char*)glewGetErrorString(err));
     }
 
+    terrain = new Terrain();
     // set app callbacks
     glfwSetKeyCallback(this->appWindow->getWindow(), App::onKeyPress);
     glfwSetWindowSizeCallback(this->appWindow->getWindow(), App::onWindowResize);
@@ -124,8 +144,6 @@ void App::Start()
 {
     if(!instance) return;
 
-    Terrain terrain;
-
     while(true)
     {
         if(glfwWindowShouldClose(instance->appWindow->getWindow())) { break; }
@@ -133,15 +151,16 @@ void App::Start()
         // clean color and depth buff
         gl.Clear().ColorBuffer().DepthBuffer(); glClear(GL_COLOR_BUFFER_BIT);
         double time = glfwGetTime();
+        time = stopRot ? stopRot : time;
         // set scene matrixes
         TransformationMatrices::View(
             glm::lookAt(
-                glm::vec3(std::cos(time * 0.25) * 1, 1, std::sin(time * 0.25) * 1),
-                glm::vec3(0, 0.25, 0),
+                glm::vec3(std::cos(time * 0.33) * 2, 1, std::sin(time * 0.33) * 2),
+                glm::vec3(0.5, 0.5, 0),
                 glm::vec3(0, 1, 0)
             )
         );
-        terrain.display();
+        terrain->display();
         glfwSwapBuffers(this->appWindow->getWindow());
         glfwPollEvents();
     }

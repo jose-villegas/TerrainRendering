@@ -216,7 +216,7 @@ void main()
     const float fRange3 = 0.65f;
     const float fRange4 = 0.85f;
 
-    if(fScale >= 0.0 && fScale <= fRange1) surfaceColor = heightSample[0];
+    if(fScale >= -1.0 && fScale <= fRange1) surfaceColor = heightSample[0];
     else if(fScale <= fRange2)
     {
         fScale -= fRange1;

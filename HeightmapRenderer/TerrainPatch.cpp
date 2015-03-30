@@ -174,7 +174,10 @@ void TerrainPatch::writePositionsAndTexCoords()
         {
             float colScale = (float)j / (patchSize - 1);
             float rowScale = (float)i / (patchSize - 1);
-            float vertexHeight = Heightmap().GetValue(i, j);
+            // same values for width and height, whole terrain
+            int xCor = i * (float)Heigth() / patchSize;
+            int yCor = j * (float)Width() / patchSize;
+            float vertexHeight = Heightmap().GetValue(xCor, yCor);
             // assign respective mesh vertex values and texture coords per pixel
             vertices[levelOfDetail][i * patchSize + j] = glm::vec3(-0.5f + colScale,
                     (vertexHeight + 1.0f) / 2.0f,
@@ -188,6 +191,8 @@ void TerrainPatch::writePositionsAndTexCoords()
 
 TerrainPatch::TerrainPatch()
 {
+    // all lod levels
+    lodLevelsAvailable = LOD_LEVELS - 1;
 }
 
 TerrainPatch::~TerrainPatch()
@@ -197,7 +202,7 @@ TerrainPatch::~TerrainPatch()
 void TerrainPatch::createPatch(Program &prog, const float height,
                                const unsigned int patchSize /*= 512*/)
 {
-    if(patchSize <= 0 || !isPowerOfTwo(patchSize)) return;
+    if(patchSize <= 4 || !isPowerOfTwo(patchSize)) return;
 
     this->prog = prog;
     this->maxHeight = height;

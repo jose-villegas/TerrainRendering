@@ -4,13 +4,27 @@
 
 void Terrain::display()
 {
-    terrain[0][0].changeLevelOfDetail(1);
-    //TransformationMatrices::Model(glm::translate(glm::mat4(1),
-    //                              glm::vec3(0, 0.0, i)));
-    terrain[0][0].display();
+    {
+        terrain[0][0].changeLevelOfDetail(1);
+        TransformationMatrices::Model(glm::translate(glm::mat4(1),
+                                      glm::vec3(0.0, 0.0, 0.0)));
+        terrain[0][0].display();
+    }
+    {
+        terrain[0][1].changeLevelOfDetail(1);
+        TransformationMatrices::Model(glm::translate(glm::mat4(1),
+                                      glm::vec3(1.00, 0.0, 0.0)));
+        terrain[0][1].display();
+    }
+    {
+        terrain[0][-1].changeLevelOfDetail(1);
+        TransformationMatrices::Model(glm::translate(glm::mat4(1),
+                                      glm::vec3(-1.00, 0.0, 0.0)));
+        terrain[0][-1].display();
+    }
 }
 
-Terrain::Terrain() : terrainMaxHeight(0.6f)
+Terrain::Terrain() : terrainMaxHeight(1.0f)
 {
     vertexShader.Source(GLSLSource::FromFile("Resources/Shaders/terrain.vert"));
     // compile it
@@ -59,20 +73,42 @@ Terrain::Terrain() : terrainMaxHeight(0.6f)
     terrainMesh.Bind();
     // context flags
     gl.Enable(Capability::DepthTest);
-    gl.Enable(Capability::CullFace);
-    gl.FrontFace(FaceOrientation::CW);
-    gl.CullFace(Face::Back);
+    //gl.Enable(Capability::CullFace);
+    //gl.FrontFace(FaceOrientation::CW);
+    //gl.CullFace(Face::Back);
     //wireframe
     glPolygonMode(GL_FRONT, GL_LINE);
     glPolygonMode(GL_BACK, GL_LINE);
+    // detail level, vertex cout = detail * detail
+    float detailLevel = 64.0f;
+    float increment = 0.5f;
+    float boundStep = increment * (detailLevel - 1.0f) / detailLevel;
     // set whole terrain size
     TerrainGenerator::setSize(512, 512);
     // gen test terraim
-    terrain[0][0].setBounds(0, 0 + 8, 0, 0 + 8);
-    terrain[0][0].build();
-    terrain[0][0].createPatch(program, terrainMaxHeight, 8);
+    {
+        terrain[0][0].setBounds(0, 0 + increment, 0, 0 + increment);
+        terrain[0][0].build();
+        terrain[0][0].createPatch(program, terrainMaxHeight, detailLevel);
+    }
+    {
+        terrain[0][1].setBounds(0, 0 + increment, boundStep, boundStep + increment);
+        terrain[0][1].build();
+        terrain[0][1].createPatch(program, terrainMaxHeight, detailLevel);
+    }
+    {
+        terrain[0][-1].setBounds(0, 0 + increment, -boundStep, -boundStep + increment);
+        terrain[0][-1].build();
+        terrain[0][-1].createPatch(program, terrainMaxHeight, detailLevel);
+    }
 }
 
+void Terrain::test(int cc)
+{
+    terrain[0][1].setBounds(0, 0 + 0.5, (float)cc / 128, (float)cc / 128 + 0.5);
+    terrain[0][1].build();
+    terrain[0][1].createPatch(program, terrainMaxHeight, 64);
+}
 
 Terrain::~Terrain()
 {

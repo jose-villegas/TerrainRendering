@@ -15,6 +15,7 @@ class TerrainGenerator
         static int heigth;
 
         static module::Perlin noiseGen;
+
         static utils::NoiseMap heightmap;
         static utils::NoiseMapBuilderPlane heightmapBuilder;
 
@@ -28,7 +29,7 @@ class TerrainGenerator
 
     protected:
         utils::NoiseMap const &Heightmap() const { return heightmap; }
-
+        module::Perlin &NoiseGen() const { return noiseGen; }
     public:
         void setBounds(const float bottomLeft, const float topLeft,
                        const float bottomRight, const float topRigth);

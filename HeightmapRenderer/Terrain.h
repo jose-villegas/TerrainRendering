@@ -16,11 +16,14 @@ class Terrain
         Program program;
         Context gl;
 
-        Patches terrain;
-    public:
 
+    public:
+        Patches terrain;
         void display();
         Terrain();
+
+        void test(int cc);
+
         ~Terrain();
 };
 

@@ -25,6 +25,7 @@ void TerrainGenerator::setSize(const int x, const int y)
     heightmapBuilder.SetDestSize(width, heigth);
 }
 
+int i = 0;
 void TerrainGenerator::build()
 {
     heightmapBuilder.SetBounds(bottomLeft, topLeft, bottomRight, topRigth);

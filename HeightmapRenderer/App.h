@@ -1,9 +1,12 @@
 #pragma once
 #include "MainWindow.h"
+#include "Terrain.h"
 
 class App
 {
     private:
+        static Terrain * terrain;
+
         static oglplus::Context gl;
         MainWindow *appWindow;
         static App *instance;

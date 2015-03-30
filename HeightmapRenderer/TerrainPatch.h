@@ -18,7 +18,11 @@ class TerrainPatch : public TerrainGenerator
         bool loaded;
         bool shaderLoaded;
         float maxHeight;
+        // describes the sampling density, higher -> more polys
         int patchSize;
+        // width and height for heightmap sampling
+        int patchArea;
+
         int lodLevelsAvailable;
         int levelOfDetail;
 
