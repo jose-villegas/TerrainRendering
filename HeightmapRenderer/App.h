@@ -4,6 +4,7 @@
 class App
 {
     private:
+        static oglplus::Context gl;
         MainWindow *appWindow;
         static App *instance;
 
@@ -14,6 +15,7 @@ class App
         static void onError(int code, const char * description);
         static void onKeyPress(GLFWwindow *window, int key, int scancode, int action,
                                int mods);
+        static void onWindowResize(GLFWwindow *window, int width, int height);
         // app libraries configuration
         void Configure();
         // app render loop

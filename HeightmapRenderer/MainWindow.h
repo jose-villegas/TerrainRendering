@@ -17,12 +17,6 @@ class MainWindow
         GLFWwindow * getWindow() const { return this->window.get(); };
         // set up as current rendering context
         void makeCurrentContext();
-        // window events callbacks
-        void setWindowPositionCallback(void (*fptr)(void*, int, int));
-        void setWindowSizeCallback(void(*fptr)(void*, int, int));
-        void setWindowCloseCallback(void(*fptr)(void*, bool));
-        void setWindowRefreshCallback(void(*fptr)(void*));
-        void setWindowFocusCallback(void(*fptr)(void*, bool));
 
         const unsigned int windowWidth() { glfwGetWindowSize(this->window.get(), &this->width, &this->height); return width; }
         const unsigned int windowHeight() { glfwGetWindowSize(this->window.get(), &this->width, &this->height); return height; }

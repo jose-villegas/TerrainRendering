@@ -79,7 +79,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="App.cpp" />
-    <ClCompile Include="Heightmap.cpp" />
+    <ClCompile Include="Terrain.cpp" />
+    <ClCompile Include="TerrainGenerator.cpp" />
+    <ClCompile Include="TerrainPatch.cpp" />
     <ClCompile Include="LibNoise\include\noiseutils.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
@@ -95,7 +97,9 @@
   <ItemGroup>
     <ClInclude Include="App.h" />
     <ClInclude Include="Commons.h" />
-    <ClInclude Include="Heightmap.h" />
+    <ClInclude Include="Terrain.h" />
+    <ClInclude Include="TerrainGenerator.h" />
+    <ClInclude Include="TerrainPatch.h" />
     <ClInclude Include="LibNoise\include\noiseutils.h" />
     <ClInclude Include="MainWindow.h" />
     <ClInclude Include="TransformationMatrices.h" />

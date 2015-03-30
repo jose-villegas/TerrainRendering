@@ -10,6 +10,8 @@ uniform struct Matrices
     mat4 normal;
 } matrix;
 
+uniform float maxHeight = 1.0f;
+
 // Input vertex data
 layout(location = 0) in vec3 vertexPosition;
 layout(location = 1) in vec2 vertexTexCoords;
@@ -25,7 +27,7 @@ void main()
 {
     vec4 vertexPos = vec4(vertexPosition, 1.0f);
 
-    height = vertexPosition.y * 3;
+    height = vertexPosition.y / maxHeight;
 
     texCoord = vertexTexCoords;
     normal = normalize(matrix.normal * vec4(vertexNormal, 0.0f)).xyz;

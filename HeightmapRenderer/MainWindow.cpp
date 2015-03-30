@@ -26,28 +26,3 @@ void MainWindow::makeCurrentContext()
     glfwMakeContextCurrent(this->getWindow());
     currentContext = this->getWindow();
 }
-
-void MainWindow::setWindowPositionCallback(void(*fptr)(void*, int, int))
-{
-    glfwSetWindowPosCallback(this->getWindow(), (GLFWwindowposfun)fptr);
-}
-
-void MainWindow::setWindowSizeCallback(void(*fptr)(void*, int, int))
-{
-    glfwSetWindowSizeCallback(this->getWindow(), (GLFWwindowsizefun)fptr);
-}
-
-void MainWindow::setWindowCloseCallback(void(*fptr)(void*, bool))
-{
-    glfwSetWindowCloseCallback(this->getWindow(), (GLFWwindowclosefun)fptr);
-}
-
-void MainWindow::setWindowRefreshCallback(void(*fptr)(void*))
-{
-    glfwSetWindowCloseCallback(this->getWindow(), (GLFWwindowrefreshfun)fptr);
-}
-
-void MainWindow::setWindowFocusCallback(void(*fptr)(void*, bool))
-{
-    glfwSetWindowFocusCallback(this->getWindow(), (GLFWwindowfocusfun)fptr);
-}

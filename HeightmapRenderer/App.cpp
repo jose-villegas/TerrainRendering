@@ -1,6 +1,8 @@
 #include "Commons.h"
 #include "App.h"
-#include "Heightmap.h"
+#include "TerrainPatch.h"
+#include "TransformationMatrices.h"
+#include "Terrain.h"
 
 App * App::instance = nullptr;
 
@@ -23,6 +25,18 @@ void App::onKeyPress(GLFWwindow *window, int key, int scancode, int action,
     }
 }
 
+void App::onWindowResize(GLFWwindow *window, int width, int height)
+{
+    gl.Viewport(width, height);
+    TransformationMatrices::Projection(
+        glm::perspective(
+            glm::radians(60.0f),
+            (float)width / height,
+            0.01f, 30.0f
+        )
+    );
+}
+
 void App::Configure()
 {
     // glfw error catching
@@ -31,8 +45,6 @@ void App::Configure()
     glfwInit();
     // setup rendering window
     this->appWindow = new MainWindow("Terrain Rendering", 800, 600);
-    // set app callbacks
-    glfwSetKeyCallback(this->appWindow->getWindow(), App::onKeyPress);
     // make window as current rendering context
     this->appWindow->makeCurrentContext();
     // initialize glew library for opengl api access
@@ -43,6 +55,12 @@ void App::Configure()
         throw std::runtime_error((const char*)glewGetErrorString(err));
     }
 
+    // set app callbacks
+    glfwSetKeyCallback(this->appWindow->getWindow(), App::onKeyPress);
+    glfwSetWindowSizeCallback(this->appWindow->getWindow(), App::onWindowResize);
+    App::onWindowResize(this->appWindow->getWindow(),
+                        this->appWindow->windowWidth(),
+                        this->appWindow->windowHeight());
     //setup logging to file
     logging::add_file_log
     (
@@ -106,17 +124,24 @@ void App::Start()
 {
     if(!instance) return;
 
-    //oglplus::TorusExample triangle1;
-    Heightmap hmp;
-    hmp.loadFromFile("whatever");
+    Terrain terrain;
 
     while(true)
     {
         if(glfwWindowShouldClose(instance->appWindow->getWindow())) { break; }
 
-        hmp.reshape(this->appWindow->windowWidth(),
-                    this->appWindow->windowHeight());
-        hmp.display(glfwGetTime());
+        // clean color and depth buff
+        gl.Clear().ColorBuffer().DepthBuffer(); glClear(GL_COLOR_BUFFER_BIT);
+        double time = glfwGetTime();
+        // set scene matrixes
+        TransformationMatrices::View(
+            glm::lookAt(
+                glm::vec3(std::cos(time * 0.25) * 1, 1, std::sin(time * 0.25) * 1),
+                glm::vec3(0, 0.25, 0),
+                glm::vec3(0, 1, 0)
+            )
+        );
+        terrain.display();
         glfwSwapBuffers(this->appWindow->getWindow());
         glfwPollEvents();
     }
