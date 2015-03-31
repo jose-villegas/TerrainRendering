@@ -155,8 +155,8 @@ void App::Start()
         // set scene matrixes
         TransformationMatrices::View(
             glm::lookAt(
-                glm::vec3(std::cos(time * 0.33) * 2, 1, std::sin(time * 0.33) * 2),
-                glm::vec3(0.5, 0.5, 0),
+                glm::vec3(std::cos(time * 0.33) * 2, 2, std::sin(time * 0.33) * 2),
+                glm::vec3(0.0, 0.5, 0.0),
                 glm::vec3(0, 1, 0)
             )
         );

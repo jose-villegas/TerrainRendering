@@ -30,8 +30,8 @@ class TerrainPatch : public TerrainGenerator
         std::vector<glm::vec3> vertices[LOD_LEVELS];
         std::vector<glm::vec2> texCoords[LOD_LEVELS];
         std::vector<glm::vec3> normals[LOD_LEVELS];
-        std::vector<unsigned int> indices[LOD_LEVELS];
-        void loadMeshData();
+        std::vector<unsigned short> indices[LOD_LEVELS];
+        void loadLodMesh(int i);
         void writeIndices();
         void writeVertexNormals(std::vector<std::vector<glm::vec3>> faceNormals[2]);
         void writeFaceNormals(std::vector<std::vector<glm::vec3>> faceNormals[2]);
@@ -46,10 +46,12 @@ class TerrainPatch : public TerrainGenerator
         TerrainPatch();
         ~TerrainPatch();
 
+        std::vector<glm::vec3> & getVertices(const float height,
+                                             const unsigned int patchSize, const unsigned int lodLevel);
         void createPatch(Program &prog, const float height,
-                         const unsigned int patchSize = 512);
+                         const unsigned int lodExponent);
+
         void display();
-        void reshape(const unsigned int width, const unsigned int height);
         //  level range from 1 - 5
         void changeLevelOfDetail(const unsigned int level);
 };

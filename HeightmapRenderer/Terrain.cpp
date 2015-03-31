@@ -2,25 +2,22 @@
 #include "Terrain.h"
 #include "TransformationMatrices.h"
 
+int left = -1;
+int top = 2;
+
 void Terrain::display()
 {
+    for(int i = left; i < top; i++)
     {
-        terrain[0][0].changeLevelOfDetail(1);
-        TransformationMatrices::Model(glm::translate(glm::mat4(1),
-                                      glm::vec3(0.0, 0.0, 0.0)));
-        terrain[0][0].display();
-    }
-    {
-        terrain[0][1].changeLevelOfDetail(1);
-        TransformationMatrices::Model(glm::translate(glm::mat4(1),
-                                      glm::vec3(1.00, 0.0, 0.0)));
-        terrain[0][1].display();
-    }
-    {
-        terrain[0][-1].changeLevelOfDetail(1);
-        TransformationMatrices::Model(glm::translate(glm::mat4(1),
-                                      glm::vec3(-1.00, 0.0, 0.0)));
-        terrain[0][-1].display();
+        int detail = 1;
+
+        for(int j = left; j < top; j++)
+        {
+            terrain[i][j].changeLevelOfDetail(detail++);
+            TransformationMatrices::Model(glm::translate(glm::mat4(1),
+                                          glm::vec3((float)j * 1.0, 0.0f, (float)i * 1.0)));
+            terrain[i][j].display();
+        }
     }
 }
 
@@ -73,33 +70,32 @@ Terrain::Terrain() : terrainMaxHeight(1.0f)
     terrainMesh.Bind();
     // context flags
     gl.Enable(Capability::DepthTest);
-    //gl.Enable(Capability::CullFace);
-    //gl.FrontFace(FaceOrientation::CW);
-    //gl.CullFace(Face::Back);
+    gl.Enable(Capability::CullFace);
+    gl.FrontFace(FaceOrientation::CW);
+    gl.CullFace(Face::Back);
     //wireframe
     glPolygonMode(GL_FRONT, GL_LINE);
     glPolygonMode(GL_BACK, GL_LINE);
     // detail level, vertex cout = detail * detail
-    float detailLevel = 64.0f;
-    float increment = 0.5f;
-    float boundStep = increment * (detailLevel - 1.0f) / detailLevel;
+    int detailLevel = 3;
+    float increment = 0.25;
+    float sqDetailLevel = (float)(detailLevel * detailLevel);
+    float boundStep = increment * (sqDetailLevel - 1.0f) / sqDetailLevel;
     // set whole terrain size
-    TerrainGenerator::setSize(512, 512);
+    TerrainGenerator::setSize(513, 513);
+
     // gen test terraim
+    for(int i = left; i < top; i++)
     {
-        terrain[0][0].setBounds(0, 0 + increment, 0, 0 + increment);
-        terrain[0][0].build();
-        terrain[0][0].createPatch(program, terrainMaxHeight, detailLevel);
-    }
-    {
-        terrain[0][1].setBounds(0, 0 + increment, boundStep, boundStep + increment);
-        terrain[0][1].build();
-        terrain[0][1].createPatch(program, terrainMaxHeight, detailLevel);
-    }
-    {
-        terrain[0][-1].setBounds(0, 0 + increment, -boundStep, -boundStep + increment);
-        terrain[0][-1].build();
-        terrain[0][-1].createPatch(program, terrainMaxHeight, detailLevel);
+        for(int j = left; j < top; j++)
+        {
+            terrain[i][j].setBounds(boundStep * i,
+                                    boundStep * i + increment,
+                                    boundStep * j,
+                                    boundStep * j + increment);
+            terrain[i][j].build();
+            terrain[i][j].createPatch(program, terrainMaxHeight, detailLevel);
+        }
     }
 }
 
