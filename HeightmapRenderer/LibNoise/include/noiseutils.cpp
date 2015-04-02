@@ -948,13 +948,47 @@ void NoiseMapBuilderPlane::Build()
     double zDelta  = zExtent / (double)m_destHeight;
     double xCur    = m_lowerXBound;
     double zCur    = m_lowerZBound;
+
     // Little Modification to the source code to make it parallelizable
     // Fill every point in the noise map with the output values from the model.
-    concurrency::parallel_for(int(0), m_destHeight, [ = ](int z)
+    //concurrency::parallel_for(int(0), m_destHeight, [ = ](int z)
+    //{
+    //    float* pDest = m_pDestNoiseMap->GetSlabPtr(z);
+    //    double xCur = m_lowerXBound;
+    //    double zCur = m_lowerZBound + zDelta * z;
+    //    for(int x = 0; x < m_destWidth; x++)
+    //    {
+    //        float finalValue;
+    //        if(!m_isSeamlessEnabled)
+    //        {
+    //            finalValue = planeModel.GetValue(xCur, zCur);
+    //        }
+    //        else
+    //        {
+    //            double swValue, seValue, nwValue, neValue;
+    //            swValue = planeModel.GetValue(xCur, zCur);
+    //            seValue = planeModel.GetValue(xCur + xExtent, zCur);
+    //            nwValue = planeModel.GetValue(xCur, zCur + zExtent);
+    //            neValue = planeModel.GetValue(xCur + xExtent, zCur + zExtent);
+    //            double xBlend = 1.0 - ((xCur - m_lowerXBound) / xExtent);
+    //            double zBlend = 1.0 - ((zCur - m_lowerZBound) / zExtent);
+    //            double z0 = LinearInterp(swValue, seValue, xBlend);
+    //            double z1 = LinearInterp(nwValue, neValue, xBlend);
+    //            finalValue = (float)LinearInterp(z0, z1, zBlend);
+    //        }
+    //        *pDest++ = finalValue;
+    //        xCur += xDelta;
+    //    }
+    //    if(m_pCallback != NULL)
+    //    {
+    //        m_pCallback(z);
+    //    }
+    //});
+    // Fill every point in the noise map with the output values from the model.
+    for(int z = 0; z < m_destHeight; z++)
     {
         float* pDest = m_pDestNoiseMap->GetSlabPtr(z);
-        double xCur = m_lowerXBound;
-        double zCur = m_lowerZBound + zDelta * z;
+        xCur = m_lowerXBound;
 
         for(int x = 0; x < m_destWidth; x++)
         {
@@ -967,9 +1001,9 @@ void NoiseMapBuilderPlane::Build()
             else
             {
                 double swValue, seValue, nwValue, neValue;
-                swValue = planeModel.GetValue(xCur, zCur);
+                swValue = planeModel.GetValue(xCur          , zCur);
                 seValue = planeModel.GetValue(xCur + xExtent, zCur);
-                nwValue = planeModel.GetValue(xCur, zCur + zExtent);
+                nwValue = planeModel.GetValue(xCur          , zCur + zExtent);
                 neValue = planeModel.GetValue(xCur + xExtent, zCur + zExtent);
                 double xBlend = 1.0 - ((xCur - m_lowerXBound) / xExtent);
                 double zBlend = 1.0 - ((zCur - m_lowerZBound) / zExtent);
@@ -982,45 +1016,13 @@ void NoiseMapBuilderPlane::Build()
             xCur += xDelta;
         }
 
+        zCur += zDelta;
+
         if(m_pCallback != NULL)
         {
             m_pCallback(z);
         }
-    });
-    //// Fill every point in the noise map with the output values from the model.
-    //for(int z = 0; z < m_destHeight; z++)
-    //{
-    //    float* pDest = m_pDestNoiseMap->GetSlabPtr(z);
-    //    xCur = m_lowerXBound;
-    //    for(int x = 0; x < m_destWidth; x++)
-    //    {
-    //        float finalValue;
-    //        if(!m_isSeamlessEnabled)
-    //        {
-    //            finalValue = planeModel.GetValue(xCur, zCur);
-    //        }
-    //        else
-    //        {
-    //            double swValue, seValue, nwValue, neValue;
-    //            swValue = planeModel.GetValue(xCur          , zCur);
-    //            seValue = planeModel.GetValue(xCur + xExtent, zCur);
-    //            nwValue = planeModel.GetValue(xCur          , zCur + zExtent);
-    //            neValue = planeModel.GetValue(xCur + xExtent, zCur + zExtent);
-    //            double xBlend = 1.0 - ((xCur - m_lowerXBound) / xExtent);
-    //            double zBlend = 1.0 - ((zCur - m_lowerZBound) / zExtent);
-    //            double z0 = LinearInterp(swValue, seValue, xBlend);
-    //            double z1 = LinearInterp(nwValue, neValue, xBlend);
-    //            finalValue = (float)LinearInterp(z0, z1, zBlend);
-    //        }
-    //        *pDest++ = finalValue;
-    //        xCur += xDelta;
-    //    }
-    //    zCur += zDelta;
-    //    if(m_pCallback != NULL)
-    //    {
-    //        m_pCallback(z);
-    //    }
-    //}
+    }
 }
 
 /////////////////////////////////////////////////////////////////////////////

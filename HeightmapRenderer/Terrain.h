@@ -18,6 +18,8 @@ class Terrain
         std::vector<unsigned int> indices;
         // mesh general data
         int terrainSize;
+        float maxHeight;
+        float minHeight;
         // utilities
         VertexArray terrainMesh;
         FragmentShader fragmentShader;
@@ -30,6 +32,7 @@ class Terrain
 
         void initialize();
         void display();
+        void bindBuffers();
         // creates a terrain of 2^sizeExponent + 1 size
         void createTerrain(int sizeExponent);
         void createMesh();

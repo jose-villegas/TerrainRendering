@@ -7,8 +7,7 @@
 App * App::instance = nullptr;
 bool App::wireframeMode = false;
 
-App::App(const std::string &title, const unsigned int width,
-         const unsigned int height) : appWindow(CreateContext())
+App::App() : appWindow(CreateContext())
 {
 }
 
@@ -23,22 +22,6 @@ void App::onKeyPress(GLFWwindow *window, int key, int scancode, int action,
     if(key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
     {
         glfwSetWindowShouldClose(window, GL_TRUE);
-    }
-
-    if(key == GLFW_KEY_1 && action == GLFW_PRESS)
-    {
-        if(!wireframeMode)
-        {
-            glPolygonMode(GL_FRONT, GL_LINE);
-            glPolygonMode(GL_BACK, GL_LINE);
-            wireframeMode = true;
-        }
-        else
-        {
-            glPolygonMode(GL_FRONT, GL_FILL);
-            glPolygonMode(GL_BACK, GL_FILL);
-            wireframeMode = false;
-        }
     }
 }
 
@@ -56,6 +39,8 @@ void App::onWindowResize(GLFWwindow *window, int width, int height)
 
 void App::Configure()
 {
+    // ui library
+    ImGui_ImplGlfwGL3_Init(this->appWindow->getWindow(), true);
     // set app callbacks
     glfwSetKeyCallback(this->appWindow->getWindow(), App::onKeyPress);
     glfwSetWindowSizeCallback(this->appWindow->getWindow(), App::onWindowResize);
@@ -103,6 +88,7 @@ void App::Configure()
                             << BOOST_VERSION / 100000 << "."        // major version
                             << BOOST_VERSION / 100 % 1000 << "."    // minior version
                             << BOOST_VERSION % 100;                 // patch level
+    BOOST_LOG_TRIVIAL(info) << "Ocornut's IMGUI " << ImGui::GetVersion();
 }
 
 MainWindow * App::CreateContext()
@@ -111,8 +97,24 @@ MainWindow * App::CreateContext()
     glfwSetErrorCallback(App::onError);
     // initialize glfw for context creation
     glfwInit();
+    // get os current monitor
+    GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+    const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+    glfwWindowHint(GLFW_RED_BITS, mode->redBits);
+    glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
+    glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
+    glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
     // setup rendering window
-    MainWindow *newWindow = new MainWindow("Terrain Rendering", 800, 600);
+    MainWindow *newWindow = new MainWindow(
+        "Terrain Rendering",
+        0.75 * mode->width,
+        0.75 * mode->height
+    );
+    glfwSetWindowPos(
+        newWindow->getWindow(),
+        (mode->width -  0.75 * mode->width) / 2,
+        (mode->height - 0.75 * mode->height) / 2
+    );
     // make window as current rendering context
     newWindow->makeCurrentContext();
     // initialize glew library for opengl api access
@@ -136,7 +138,7 @@ App * App::Instance()
 {
     if(!instance)
     {
-        return instance = new App("Terrain Rendering", 800, 600);
+        return instance = new App();
     }
 
     return instance;
@@ -147,37 +149,51 @@ void App::Start()
     if(!instance) return;
 
     terrain.initialize();
-    terrain.createTerrain(9);
+    terrain.createTerrain(10);
     terrain.createMesh();
-    float lastTime = 0.0f;
+    // set view / camera matrix
+    TransformationMatrices::View(
+        glm::lookAt(
+            glm::vec3(1.0, 2.0, 1.0),
+            glm::vec3(0.0, 1.0, 0.0),
+            glm::vec3(0, 1, 0)
+        )
+    );
 
-    while(true)
+    while(!glfwWindowShouldClose(this->appWindow->getWindow()))
     {
-        double currentTime = glfwGetTime();
-        float deltaTime = float(currentTime - lastTime);
-
-        if(glfwWindowShouldClose(instance->appWindow->getWindow())) { break; }
-
         // clean color and depth buff
         gl.Clear().ColorBuffer().DepthBuffer(); glClear(GL_COLOR_BUFFER_BIT);
-        double time = glfwGetTime() * 0.0;
-
-        if(glfwGetKey(this->appWindow->getWindow(),
-                      GLFW_KEY_P) == GLFW_PRESS) time = 0.0;
-
-        // set scene matrixes
+        // poll input events
+        glfwPollEvents();
+        // inmediate user interface new frame
+        ImGui_ImplGlfwGL3_NewFrame();
+        {
+            ImGui::SetNextWindowPos(ImVec2(10, 10));
+            ImGui::Begin("Performance Window", nullptr,
+                         ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
+                         ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
+            ImGui::Text("Performance");
+            ImGui::Separator();
+            ImGui::Text("FPS: (%.1f)", ImGui::GetIO().Framerate);
+            ImGui::End();
+        }
         TransformationMatrices::View(
             glm::lookAt(
-                glm::vec3(std::cos(time * 0.33) * 2, 2, std::sin(time * 0.33) * 2),
-                glm::vec3(0.0, 1.0, 0.0),
+                glm::vec3(std::sin(glfwGetTime() * 0.25), 2.0, std::cos(glfwGetTime() * 0.25)),
+                glm::vec3(0.0, 1.5, 0.0),
                 glm::vec3(0, 1, 0)
             )
         );
+        // render terrain
         terrain.display();
+        // render user interface
+        ImGui::Render();
+        // swap double buffer
         glfwSwapBuffers(this->appWindow->getWindow());
-        glfwPollEvents();
-        lastTime = currentTime;
     }
+
+    ImGui_ImplGlfwGL3_Shutdown();
 }
 
 void App::Run()

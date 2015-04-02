@@ -79,6 +79,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="App.cpp" />
+    <ClCompile Include="ImGui\imgui.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="ImGui\imgui_impl_glfw_gl3.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="Terrain.cpp" />
     <ClCompile Include="Heightmap.cpp" />
     <ClCompile Include="TerrainPatch.cpp" />
@@ -97,6 +105,8 @@
   <ItemGroup>
     <ClInclude Include="App.h" />
     <ClInclude Include="Commons.h" />
+    <ClInclude Include="ImGui\imgui.h" />
+    <ClInclude Include="ImGui\imgui_impl_glfw_gl3.h" />
     <ClInclude Include="Terrain.h" />
     <ClInclude Include="Heightmap.h" />
     <ClInclude Include="TerrainPatch.h" />

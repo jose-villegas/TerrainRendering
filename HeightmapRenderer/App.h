@@ -13,8 +13,7 @@ class App
         Terrain terrain;
 
         App(const App &rhs);
-        App(const std::string &title, const unsigned int width,
-            const unsigned int height);
+        App();
         // app callbacks
         static void onError(int code, const char * description);
         static void onKeyPress(GLFWwindow *window, int key, int scancode, int action,
