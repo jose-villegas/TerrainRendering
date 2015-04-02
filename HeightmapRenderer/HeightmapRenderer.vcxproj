@@ -80,7 +80,7 @@
   <ItemGroup>
     <ClCompile Include="App.cpp" />
     <ClCompile Include="Terrain.cpp" />
-    <ClCompile Include="TerrainGenerator.cpp" />
+    <ClCompile Include="Heightmap.cpp" />
     <ClCompile Include="TerrainPatch.cpp" />
     <ClCompile Include="LibNoise\include\noiseutils.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
@@ -98,7 +98,7 @@
     <ClInclude Include="App.h" />
     <ClInclude Include="Commons.h" />
     <ClInclude Include="Terrain.h" />
-    <ClInclude Include="TerrainGenerator.h" />
+    <ClInclude Include="Heightmap.h" />
     <ClInclude Include="TerrainPatch.h" />
     <ClInclude Include="LibNoise\include\noiseutils.h" />
     <ClInclude Include="MainWindow.h" />
@@ -113,6 +113,9 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="app_0.log" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="terrain.bmp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

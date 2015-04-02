@@ -131,6 +131,7 @@ vec3 calculatePointLight(PointLight lightSource, vec3 position,
         // calculate blinn-phong specular
         vec3 viewDirection = normalize(-position);
 
+        // specular scaling factor
         if(material.shininessStrength > 0.0f)
         {
             float specularFactor = blinnPhongSpecular(lightDirection, viewDirection,
@@ -181,6 +182,7 @@ vec3 calculateDirectionalLight(DirectionalLight lightSource, vec3 position,
         // calculate blinn-phong specular
         vec3 viewDirection = normalize(-position);
 
+        // specular scaling factor
         if(material.shininessStrength > 0.0f)
         {
             float specularFactor = blinnPhongSpecular(lightSource.direction, viewDirection,

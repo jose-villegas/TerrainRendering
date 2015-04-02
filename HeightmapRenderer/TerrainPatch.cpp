@@ -41,7 +41,7 @@ void TerrainPatch::loadLodMesh(int i)
         {
             Buffer::Data(Buffer::Target::ElementArray, indices[i]);
             gl.Enable(Capability::PrimitiveRestart);
-            gl.PrimitiveRestartIndex(patchSize * patchSize);
+            gl.PrimitiveRestartIndex(vertices->size());
         }
     }
 }
@@ -73,71 +73,6 @@ void TerrainPatch::writeVertexNormals(std::vector < std::vector<glm::vec3> >
         {
             glm::vec3 fNormal = glm::vec3(0.f, 0.f, 0.f);
 
-            // top border
-            if(i == 0)
-            {
-                glm::vec3 borderFaceNormal[2][2];
-                std::vector<glm::vec3> borderVertex;
-
-                for(int y = i - 1; y < i + 1; y++)
-                {
-                    for(int x = j - 1; x < j + 2; x++)
-                    {
-                        float colScale = (float)x / (patchSize - 1);
-                        float rowScale = (float)y / (patchSize - 1);
-                        // same values for width and height, whole terrain
-                        int xCor = y * (float)Heigth() / patchSize;
-                        int yCor = x * (float)Width() / patchSize;
-                        float vertexHeight = Heightmap().GetValue(xCor, yCor) * maxHeight;
-                        // assign respective mesh vertex values and texture coords per pixel
-                        borderVertex.push_back(
-                            glm::vec3(
-                                -0.5f + colScale,
-                                vertexHeight,
-                                -0.5f + rowScale
-                            )
-                        );
-                    }
-                }
-
-                for(int x = 0; x < 2; x++)
-                {
-                    glm::vec3 triangle0[] =
-                    {
-                        borderVertex[x],
-                        borderVertex[3 + x],
-                        borderVertex[3 + x + 1]
-                    };
-                    glm::vec3 triangle1[] =
-                    {
-                        borderVertex[3 + x + 1],
-                        borderVertex[x + 1],
-                        borderVertex[x]
-                    };
-                    glm::vec3 t0Normal = glm::cross(triangle0[0] - triangle0[1],
-                                                    triangle0[1] - triangle0[2]);
-                    glm::vec3 t1Normal = glm::cross(triangle1[0] - triangle1[1],
-                                                    triangle1[1] - triangle1[2]);
-                    fNormal += glm::normalize(t0Normal);
-                    fNormal += glm::normalize(t1Normal);
-                }
-            }
-
-            // bottom border
-            if(i == patchSize - 1)
-            {
-            }
-
-            // left border
-            if(j == 0)
-            {
-            }
-
-            // right border
-            if(j == patchSize - 1)
-            {
-            }
-
             // upper left faces
             if(j != 0 && i != 0)
             {
@@ -162,8 +97,15 @@ void TerrainPatch::writeVertexNormals(std::vector < std::vector<glm::vec3> >
                 fNormal += faceNormals[1][i][j - 1];
             }
 
+            float h0 = getValue(j + 1, i);
+            float h1 = getValue(j - 1, i);
+            float h2 = getValue(j, i + 1);
+            float h3 = getValue(j, i + 1);
+            //normals[levelOfDetail].push_back(
+            //    glm::normalize(fNormal)
+            //);
             normals[levelOfDetail].push_back(
-                glm::normalize(fNormal)
+                glm::normalize(glm::vec3(h1 - h0, 2, h3 - h2))
             );
         }
     }
@@ -217,7 +159,7 @@ void TerrainPatch::writePositionsAndTexCoords()
             // same values for width and height, whole terrain
             int xCor = i * (float)Heigth() / patchSize;
             int yCor = j * (float)Width() / patchSize;
-            float vertexHeight = Heightmap().GetValue(xCor, yCor) * maxHeight;
+            float vertexHeight = getValue(xCor, yCor) * maxHeight;
             // get maximum and minimum
             maxValue = vertexHeight > maxValue ? vertexHeight : maxValue;
             minValue = vertexHeight > minValue ? vertexHeight : minValue;
@@ -274,7 +216,7 @@ std::vector<glm::vec3> & TerrainPatch::getVertices(const float height,
             // same values for width and height, whole terrain
             int xCor = i * (float)Heigth() / tPatchSize;
             int yCor = j * (float)Width() / tPatchSize;
-            float vertexHeight = Heightmap().GetValue(xCor, yCor) * maxHeight;
+            float vertexHeight = getValue(xCor, yCor) * maxHeight;
             // assign respective mesh vertex values and texture coords per pixel
             resultVertices.push_back(
                 glm::vec3(
@@ -296,7 +238,7 @@ void TerrainPatch::createPatch(Program &prog, const float height,
 
     this->prog = prog;
     this->maxHeight = height;
-    this->patchSize = std::pow(2, lodExponent) + 2;
+    this->patchSize = std::pow(2, lodExponent) + 1;
     // create all the mesh data for this patch size
     int originalPatchSize = this->patchSize;
     int currentExponent = lodExponent;
@@ -318,7 +260,7 @@ void TerrainPatch::createPatch(Program &prog, const float height,
 
         loadLodMesh(i);
         // reduce patch size for different lod levels
-        this->patchSize = std::pow(2, --currentExponent) + 2;
+        this->patchSize = std::pow(2, --currentExponent) + 1;
         // this->patchSize = (float)(this->patchSize) / 2.0;
     }
 

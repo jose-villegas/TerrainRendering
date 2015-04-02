@@ -5,11 +5,12 @@
 class App
 {
     private:
-        static Terrain * terrain;
-
         static oglplus::Context gl;
-        MainWindow *appWindow;
         static App *instance;
+        static bool wireframeMode;
+
+        MainWindow * appWindow;
+        Terrain terrain;
 
         App(const App &rhs);
         App(const std::string &title, const unsigned int width,
@@ -21,6 +22,7 @@ class App
         static void onWindowResize(GLFWwindow *window, int width, int height);
         // app libraries configuration
         void Configure();
+        MainWindow * CreateContext();
         // app render loop
         void Start();
     public:

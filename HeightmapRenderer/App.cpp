@@ -4,11 +4,11 @@
 #include "TransformationMatrices.h"
 #include "Terrain.h"
 
-Terrain * App::terrain = nullptr;
 App * App::instance = nullptr;
+bool App::wireframeMode = false;
 
 App::App(const std::string &title, const unsigned int width,
-         const unsigned int height)
+         const unsigned int height) : appWindow(CreateContext())
 {
 }
 
@@ -16,9 +16,6 @@ void App::onError(int code, const char * description)
 {
     throw std::runtime_error(description);
 }
-
-int counter;
-float stopRot = 0.0;
 
 void App::onKeyPress(GLFWwindow *window, int key, int scancode, int action,
                      int mods)
@@ -28,19 +25,20 @@ void App::onKeyPress(GLFWwindow *window, int key, int scancode, int action,
         glfwSetWindowShouldClose(window, GL_TRUE);
     }
 
-    if(key == GLFW_KEY_W && action == GLFW_PRESS)
+    if(key == GLFW_KEY_1 && action == GLFW_PRESS)
     {
-        terrain->test(++counter);
-    }
-
-    if(key == GLFW_KEY_S && action == GLFW_PRESS)
-    {
-        terrain->test(--counter);
-    }
-
-    if(key == GLFW_KEY_P && action == GLFW_PRESS)
-    {
-        stopRot ? stopRot = 0 : stopRot = glfwGetTime();
+        if(!wireframeMode)
+        {
+            glPolygonMode(GL_FRONT, GL_LINE);
+            glPolygonMode(GL_BACK, GL_LINE);
+            wireframeMode = true;
+        }
+        else
+        {
+            glPolygonMode(GL_FRONT, GL_FILL);
+            glPolygonMode(GL_BACK, GL_FILL);
+            wireframeMode = false;
+        }
     }
 }
 
@@ -51,30 +49,13 @@ void App::onWindowResize(GLFWwindow *window, int width, int height)
         glm::perspective(
             glm::radians(60.0f),
             (float)width / height,
-            0.01f, 30.0f
+            0.1f, 100.0f
         )
     );
 }
 
 void App::Configure()
 {
-    // glfw error catching
-    glfwSetErrorCallback(App::onError);
-    // initialize glfw for context creation
-    glfwInit();
-    // setup rendering window
-    this->appWindow = new MainWindow("Terrain Rendering", 800, 600);
-    // make window as current rendering context
-    this->appWindow->makeCurrentContext();
-    // initialize glew library for opengl api access
-    GLenum err = glewInit();
-
-    if(err != GLEW_OK)
-    {
-        throw std::runtime_error((const char*)glewGetErrorString(err));
-    }
-
-    terrain = new Terrain();
     // set app callbacks
     glfwSetKeyCallback(this->appWindow->getWindow(), App::onKeyPress);
     glfwSetWindowSizeCallback(this->appWindow->getWindow(), App::onWindowResize);
@@ -124,6 +105,27 @@ void App::Configure()
                             << BOOST_VERSION % 100;                 // patch level
 }
 
+MainWindow * App::CreateContext()
+{
+    // glfw error catching
+    glfwSetErrorCallback(App::onError);
+    // initialize glfw for context creation
+    glfwInit();
+    // setup rendering window
+    MainWindow *newWindow = new MainWindow("Terrain Rendering", 800, 600);
+    // make window as current rendering context
+    newWindow->makeCurrentContext();
+    // initialize glew library for opengl api access
+    GLenum err = glewInit();
+
+    if(err != GLEW_OK)
+    {
+        throw std::runtime_error((const char*)glewGetErrorString(err));
+    }
+
+    return newWindow;
+}
+
 App::~App()
 {
     delete this->appWindow;
@@ -144,25 +146,37 @@ void App::Start()
 {
     if(!instance) return;
 
+    terrain.initialize();
+    terrain.createTerrain(9);
+    terrain.createMesh();
+    float lastTime = 0.0f;
+
     while(true)
     {
+        double currentTime = glfwGetTime();
+        float deltaTime = float(currentTime - lastTime);
+
         if(glfwWindowShouldClose(instance->appWindow->getWindow())) { break; }
 
         // clean color and depth buff
         gl.Clear().ColorBuffer().DepthBuffer(); glClear(GL_COLOR_BUFFER_BIT);
-        double time = glfwGetTime();
-        time = stopRot ? stopRot : time;
+        double time = glfwGetTime() * 0.0;
+
+        if(glfwGetKey(this->appWindow->getWindow(),
+                      GLFW_KEY_P) == GLFW_PRESS) time = 0.0;
+
         // set scene matrixes
         TransformationMatrices::View(
             glm::lookAt(
                 glm::vec3(std::cos(time * 0.33) * 2, 2, std::sin(time * 0.33) * 2),
-                glm::vec3(0.0, 0.5, 0.0),
+                glm::vec3(0.0, 1.0, 0.0),
                 glm::vec3(0, 1, 0)
             )
         );
-        terrain->display();
+        terrain.display();
         glfwSwapBuffers(this->appWindow->getWindow());
         glfwPollEvents();
+        lastTime = currentTime;
     }
 }
 

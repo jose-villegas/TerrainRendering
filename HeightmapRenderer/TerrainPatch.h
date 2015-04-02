@@ -1,8 +1,8 @@
 #pragma once
-#include "TerrainGenerator.h"
+#include "Heightmap.h"
 using namespace oglplus;
 
-class TerrainPatch : public TerrainGenerator
+class TerrainPatch : public Heightmap
 {
     private:
         const static int LOD_LEVELS = 5;

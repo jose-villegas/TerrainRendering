@@ -14,85 +14,35 @@ glm::mat4 TransformationMatrices::modelViewProjection = glm::mat4(1);
 
 const glm::mat4 & TransformationMatrices::ModelViewProjection()
 {
-    if(!(modelMatrixChanged || viewMatrixChanged) && projectionMatrixChanged)
-    {
-        modelViewProjection = projection * modelView;
-        projectionMatrixChanged = false;
-        modelMatrixChanged = viewMatrixChanged = projectionMatrixChanged = false;
-    }
-
-    if(modelMatrixChanged || viewMatrixChanged)
-    {
-        modelView = view * model;
-        modelViewProjection = projection * modelView;
-        normal = glm::transpose(glm::inverse(modelView));
-        modelMatrixChanged = viewMatrixChanged = projectionMatrixChanged = false;
-    }
-
+    modelViewProjection = projection * view * model;
     return modelViewProjection;
 }
 
 const glm::mat4 & TransformationMatrices::ModelView()
 {
-    if(modelMatrixChanged || viewMatrixChanged)
-    {
-        modelView = view * model;
-        normal = glm::transpose(glm::inverse(modelView));
-        modelMatrixChanged = viewMatrixChanged = false;
-    }
-
+    modelView = view * model;
     return modelView;
 }
 
 const glm::mat4 & TransformationMatrices::Normal()
 {
-    if(modelMatrixChanged || viewMatrixChanged)
-    {
-        modelView = view * model;
-        normal = glm::transpose(glm::inverse(modelView));
-        modelMatrixChanged = viewMatrixChanged = false;
-    }
-
+    normal = glm::transpose(glm::inverse(modelView));
     return normal;
 }
 
 void TransformationMatrices::Projection(const glm::mat4 &matrix)
 {
-    if(matrix != projection)
-    {
-        projectionMatrixChanged = true;
-        projection = matrix;
-    }
-    else
-    {
-        projectionMatrixChanged = false;
-    }
+    projection = matrix;
 }
 
 void TransformationMatrices::View(const glm::mat4 &matrix)
 {
-    if(matrix != view)
-    {
-        viewMatrixChanged = true;
-        view = matrix;
-    }
-    else
-    {
-        viewMatrixChanged = false;
-    }
+    view = matrix;
 }
 
 void TransformationMatrices::Model(const glm::mat4 &matrix)
 {
-    if(matrix != model)
-    {
-        modelMatrixChanged = true;
-        model = matrix;
-    }
-    else
-    {
-        modelMatrixChanged = false;
-    }
+    model = matrix;
 }
 
 TransformationMatrices::TransformationMatrices()
