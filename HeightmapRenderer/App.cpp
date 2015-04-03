@@ -40,7 +40,7 @@ void App::onWindowResize(GLFWwindow *window, int width, int height)
 void App::Configure()
 {
     // ui library
-    ImGui_ImplGlfwGL3_Init(this->appWindow->getWindow(), true);
+    gui.initialize(this->appWindow->getWindow());
     // set app callbacks
     glfwSetKeyCallback(this->appWindow->getWindow(), App::onKeyPress);
     glfwSetWindowSizeCallback(this->appWindow->getWindow(), App::onWindowResize);
@@ -130,6 +130,7 @@ MainWindow * App::CreateContext()
 
 App::~App()
 {
+    gui.terminate();
     delete this->appWindow;
     glfwTerminate();
 }
@@ -149,8 +150,6 @@ void App::Start()
     if(!instance) return;
 
     terrain.initialize();
-    terrain.createTerrain(10);
-    terrain.createMesh();
     // set view / camera matrix
     TransformationMatrices::View(
         glm::lookAt(
@@ -166,34 +165,27 @@ void App::Start()
         gl.Clear().ColorBuffer().DepthBuffer(); glClear(GL_COLOR_BUFFER_BIT);
         // poll input events
         glfwPollEvents();
-        // inmediate user interface new frame
-        ImGui_ImplGlfwGL3_NewFrame();
-        {
-            ImGui::SetNextWindowPos(ImVec2(10, 10));
-            ImGui::Begin("Performance Window", nullptr,
-                         ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
-                         ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
-            ImGui::Text("Performance");
-            ImGui::Separator();
-            ImGui::Text("FPS: (%.1f)", ImGui::GetIO().Framerate);
-            ImGui::End();
-        }
+        // draw the user interface
+        gui.draw();
+        // scene transformations
         TransformationMatrices::View(
             glm::lookAt(
-                glm::vec3(std::sin(glfwGetTime() * 0.25), 2.0, std::cos(glfwGetTime() * 0.25)),
-                glm::vec3(0.0, 1.5, 0.0),
+                glm::vec3(
+                    std::sin(glfwGetTime() * 0.25) * 5.0,
+                    3.0,
+                    std::cos(glfwGetTime() * 0.25) * 5.0
+                ),
+                glm::vec3(0.0, 0.0, 0.0),
                 glm::vec3(0, 1, 0)
             )
         );
         // render terrain
         terrain.display();
         // render user interface
-        ImGui::Render();
+        gui.render();
         // swap double buffer
         glfwSwapBuffers(this->appWindow->getWindow());
     }
-
-    ImGui_ImplGlfwGL3_Shutdown();
 }
 
 void App::Run()

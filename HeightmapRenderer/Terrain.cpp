@@ -8,12 +8,12 @@ void Terrain::display()
 
     // reset original state
     {
+        program.Use();
+        bindBuffers();
         gl.Enable(Capability::DepthTest);
         gl.Enable(Capability::CullFace);
         gl.FrontFace(FaceOrientation::CW);
         gl.CullFace(Face::Back);
-        program.Use();
-        bindBuffers();
     }
     // set shader uniforms
     {
@@ -57,129 +57,99 @@ void Terrain::bindBuffers()
     buffer[3].Bind(Buffer::Target::ElementArray);
 }
 
-void Terrain::createTerrain(int sizeExponent)
+void Terrain::createTerrain(const int heightmapSize)
 {
-    this->terrainSize = std::pow(2, sizeExponent) + 1;
-    heightmap.setSize(terrainSize, terrainSize);
+    // no need to redo the same operation
+    if(heightmapSize == terrainResolution && heightmapCreated ||
+       heightmapSize < 1) return;
+
+    this->terrainResolution = heightmapSize;
+    heightmap.setSize(terrainResolution, terrainResolution);
     heightmap.setBounds(0, 4, 0, 4);
     heightmap.build();
     heightmap.writeToFile("terrain");
     heightmapCreated = true;
+    meshCreated = false;
 }
 
-void Terrain::createMesh()
+void Terrain::createMesh(const int meshResExponent)
 {
     // will not create a mesh until height data is ready
     if(!heightmapCreated) return;
 
+    int newResolution = std::pow(2, meshResExponent) + 1;
+
+    // no need to redo the same operation
+    if(newResolution == meshResolution && meshCreated) return;
+
+    this->meshResolution = newResolution;
     // clear any previous data
     this->indices.clear();
     this->vertices.clear();
     this->texCoords.clear();
     this->normals.clear();
     // reserve space for new data
-    vertices.resize(terrainSize * terrainSize);
-    normals.resize(terrainSize * terrainSize);
-    texCoords.resize(terrainSize * terrainSize);
-    indices.resize((terrainSize - 1) * terrainSize * 2 + terrainSize);
+    vertices.resize(meshResolution * meshResolution);
+    normals.resize(meshResolution * meshResolution);
+    texCoords.resize(meshResolution * meshResolution);
+    indices.resize((meshResolution - 1) * meshResolution * 2 + meshResolution);
     // load mesh positions and heights as vertices
-    float textureU = (float)terrainSize * 0.1f;
-    float textureV = (float)terrainSize * 0.1f;
+    float textureU = (float)meshResolution * 0.1f;
+    float textureV = (float)meshResolution * 0.1f;
     // index buffer restart triangle strip
-    int restartIndex = terrainSize * terrainSize;
-    float enlargeMap = 17.0;
+    int restartIndex = meshResolution * meshResolution;
+    float enlargeMap = 30.0;
     // maximum height / texel space
-    float heightTexelRatio = 1.0 / enlargeMap;
+    float heightTexelRatio = 1.0 / (meshResolution / enlargeMap);
     // parallel modification
-    concurrency::parallel_for(int(0), terrainSize, [&](int i)
+    concurrency::parallel_for(int(0), meshResolution, [&](int i)
     {
-        int indexAt = i * (2 * terrainSize + 1);
+        int indexAt = i * (2 * meshResolution + 1);
 
-        for(int j = 0; j < terrainSize; j++)
+        for(int j = 0; j < meshResolution; j++)
         {
             // scales to x, z [0.0, 1.0]
-            float colScale = enlargeMap * (float)j / (terrainSize - 1);
-            float rowScale = enlargeMap * (float)i / (terrainSize - 1);
-            float vertexHeight = heightmap.getValue(j, i);
+            float colScale = enlargeMap * (float)j / (meshResolution - 1);
+            float rowScale = enlargeMap * (float)i / (meshResolution - 1);
+            // height map positions
+            int xCor = j * (float)terrainResolution / meshResolution;
+            int yCor = i * (float)terrainResolution / meshResolution;
+            float vertexHeight = heightmap.getValue(xCor, yCor);
+            // transform from [-1,1] to [0,1]
+            vertexHeight = std::min(1.0f, std::max(0.0f, (vertexHeight + 1.0f) / 2.0f));
             // create vertex position
-            vertices[i * terrainSize + j] =
+            vertices[i * meshResolution + j] =
                 glm::vec3(
                     -enlargeMap / 2.0f + colScale,
                     vertexHeight,
                     -enlargeMap / 2.0f + rowScale
                 );
             // also create the appropiate texcoord
-            texCoords[i * terrainSize + j] =
+            texCoords[i * meshResolution + j] =
                 glm::vec2(textureU * colScale, textureV * rowScale);
             // calculate approximate normal at vertex position
-            float h0 = heightmap.getValue(j + 1, i);
-            float h1 = heightmap.getValue(j - 1, i);
-            float h2 = heightmap.getValue(j, i + 1);
-            float h3 = heightmap.getValue(j, i + 1);
-            normals[i * terrainSize + j] =
+            float h0 = heightmap.getValue(xCor + 1, yCor);
+            float h1 = heightmap.getValue(xCor - 1, yCor);
+            float h2 = heightmap.getValue(xCor, yCor + 1);
+            float h3 = heightmap.getValue(xCor, yCor + 1);
+            normals[i * meshResolution + j] =
                 glm::normalize(glm::vec3(h1 - h0, 2.0 * heightTexelRatio, h3 - h2));
 
             // create triangle strip indices
-            if(i != terrainSize - 1)
+            if(i != meshResolution - 1)
             {
-                indices[j * 2 + indexAt] = ((i + 1) * terrainSize + j);
-                indices[(j + 1) * 2 - 1 + indexAt] = (i * terrainSize + j);
+                indices[j * 2 + indexAt] = ((i + 1) * meshResolution + j);
+                indices[(j + 1) * 2 - 1 + indexAt] = (i * meshResolution + j);
             }
         }
 
         // indices restart token
-        if(i != terrainSize - 1)
+        if(i != meshResolution - 1)
         {
-            int restartAt = 2 * (i + 1) * terrainSize + i;
+            int restartAt = 2 * (i + 1) * meshResolution + i;
             indices[restartAt] = restartIndex;
         }
     });
-    //for(int i = 0; i < terrainSize; i++)
-    //{
-    //    int indexAt = i * (2 * terrainSize + 1);
-    //    for(int j = 0; j < terrainSize; j++)
-    //    {
-    //        // scales to x, z [0.0, 1.0]
-    //        float colScale = enlargeMap * (float)j / (terrainSize - 1);
-    //        float rowScale = enlargeMap * (float)i / (terrainSize - 1);
-    //        float vertexHeight = heightmap.getValue(j, i);
-    //        // create vertex position
-    //        vertices[i * terrainSize + j] =
-    //            glm::vec3(
-    //                -enlargeMap / 2.0f + colScale,
-    //                (vertexHeight + 1.0f) / 2.0f,
-    //                -enlargeMap / 2.0f + rowScale
-    //            );
-    //        // also create the appropiate texcoord
-    //        texCoords[i * terrainSize + j] =
-    //            glm::vec2(textureU * colScale, textureV * rowScale);
-    //        // calculate approximate normal at vertex position
-    //        float h0 = heightmap.getValue(j + 1, i);
-    //        float h1 = heightmap.getValue(j - 1, i);
-    //        float h2 = heightmap.getValue(j, i + 1);
-    //        float h3 = heightmap.getValue(j, i + 1);
-    //        normals[i * terrainSize + j] =
-    //            glm::normalize(glm::vec3(h1 - h0, 2.0 * heightTexelRatio, h3 - h2));
-    //        // create triangle strip indices
-    //        if(i != terrainSize - 1)
-    //        {
-    //            //indices[i * terrainSize + j] = ((i + 1) * terrainSize + j);
-    //            //indices[i * terrainSize + j + 1] = (i * terrainSize + j);
-    //            indices[j * 2 + indexAt] = ((i + 1) * terrainSize + j);
-    //            indices[(j + 1) * 2 - 1 + indexAt] = (i * terrainSize + j);
-    //            //indices.push_back((i + 1) * terrainSize + j);
-    //            //indices.push_back(i * terrainSize + j);
-    //        }
-    //    }
-    //    // indices restart token
-    //    if(i != terrainSize - 1)
-    //    {
-    //        int restartAt = 2 * (i + 1) * terrainSize + i;
-    //        indices[restartAt] = restartIndex;
-    //        //indices.push_back(restartIndex);
-    //    }
-    //}
-    //std::vector < std::vector<glm::vec3> >faceNormals[2];
     // upload position data to the gpu
     buffer[0].Bind(Buffer::Target::Array);
     {

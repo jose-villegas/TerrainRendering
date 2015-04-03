@@ -1,6 +1,7 @@
 #pragma once
 #include "MainWindow.h"
 #include "Terrain.h"
+#include "AppInterface.h"
 
 class App
 {
@@ -11,6 +12,7 @@ class App
 
         MainWindow * appWindow;
         Terrain terrain;
+        AppInterface gui;
 
         App(const App &rhs);
         App();
@@ -27,6 +29,7 @@ class App
     public:
         static App * Instance();
         void Run();
+        Terrain &getTerrain() { return terrain; }
 
         ~App();
 };

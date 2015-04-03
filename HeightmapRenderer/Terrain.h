@@ -17,7 +17,10 @@ class Terrain
         std::vector<glm::vec3> normals;
         std::vector<unsigned int> indices;
         // mesh general data
-        int terrainSize;
+        int meshResolution;
+        int terrainResolution;
+        // meshSize * meshSize = vertex count
+        int meshSize;
         float maxHeight;
         float minHeight;
         // utilities
@@ -34,8 +37,8 @@ class Terrain
         void display();
         void bindBuffers();
         // creates a terrain of 2^sizeExponent + 1 size
-        void createTerrain(int sizeExponent);
-        void createMesh();
+        void createTerrain(const int heightmapSize);
+        void createMesh(const int meshResExponent);
 
         Terrain();
         ~Terrain();
