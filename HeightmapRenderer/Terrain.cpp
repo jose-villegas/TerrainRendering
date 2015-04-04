@@ -127,7 +127,10 @@ void Terrain::createMesh(const int meshResExponent)
                 );
             // also create the appropiate texcoord
             texCoords[i * meshResolution + j] =
-                glm::vec2(textureU * colScale, textureV * rowScale);
+                glm::vec2(
+                    textureU * (colScale / enlargeMap),
+                    textureV * (rowScale / enlargeMap)
+                );
 
             // create triangle strip indices
             if(i != meshResolution - 1)

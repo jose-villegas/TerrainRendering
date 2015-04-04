@@ -107,21 +107,15 @@ void AppInterface::draw()
                 bool rangeChanged = false;
                 ImGui::PushID(i);
                 ImGui::PushStyleColor(ImGuiCol_FrameBg, ImColor::HSV(i / 7.0f, 0.5f, 0.5f));
-
-                if(ImGui::VSliderFloat("##t", ImVec2(17, 120),
-                                       &ranges[2 * i], 0.0f, 1.0f, ""))
-                    rangeChanged ^= true;
+                ImGui::VSliderFloat("##t", ImVec2(17, 120), &ranges[2 * i], 0.0f, 1.0f, "");
+                ImGui::PopStyleColor();
 
                 if(ImGui::IsItemActive() || ImGui::IsItemHovered())
                     ImGui::SetTooltip("%.3f", ranges[2 * i]);
 
                 ImGui::SameLine();
                 ImGui::PushStyleColor(ImGuiCol_FrameBg, ImColor::HSV(i / 7.0f, 0.5f, 0.5f));
-
-                if(ImGui::VSliderFloat("##v", ImVec2(17, 120),
-                                       &ranges[2 * i + 1], 0.0f, 1.0f, ""))
-                    rangeChanged = true;
-
+                ImGui::VSliderFloat("##v", ImVec2(17, 120), &ranges[2 * i + 1], 0.0f, 1.0f, "");
                 ImGui::PopStyleColor();
 
                 if(ImGui::IsItemActive() || ImGui::IsItemHovered())
@@ -138,13 +132,9 @@ void AppInterface::draw()
                 }
 
                 // set values
-                if(rangeChanged)
-                {
-                    App::Instance()->getTerrain()
-                    .TerrainTextures()
-                    .SetTextureRange(i, ranges[i * 2], ranges[i * 2 + 1]);
-                }
-
+                App::Instance()->getTerrain()
+                .TerrainTextures()
+                .SetTextureRange(i, ranges[i * 2], ranges[i * 2 + 1]);
                 ImGui::PopID();
             }
 

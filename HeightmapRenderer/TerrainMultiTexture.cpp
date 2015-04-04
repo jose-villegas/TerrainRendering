@@ -67,8 +67,8 @@ void TerrainMultiTexture::loadTexture(const std::string &filepath,
              pixelFormat, PixelDataType::UnsignedByte, bits)
     .MinFilter(TextureMinFilter::Linear)
     .MagFilter(TextureMagFilter::Linear)
-    .WrapS(TextureWrap::Repeat)
-    .WrapT(TextureWrap::Repeat);
+    .WrapS(TextureWrap::ClampToEdge)
+    .WrapT(TextureWrap::ClampToEdge);
     // unload data from memory once uploaded to gpu
     FreeImage_Unload(dib);
     // set range as texture active
