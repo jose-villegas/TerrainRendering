@@ -1,21 +1,24 @@
 #pragma once
 using namespace oglplus;
+
 class TerrainMultiTexture
 {
     private:
+        static const int MAX_TERRAIN_TEXTURE_RANGES = 4;
+
         Texture texture;
-        Texture uiTextures[4];
+        std::array<Texture, MAX_TERRAIN_TEXTURE_RANGES> uiTextures;
         Context gl;
         // range
-        float rangeStart;
-        float rangeEnd;
+        GLfloat ranges[MAX_TERRAIN_TEXTURE_RANGES * 3];
 
     public:
         void loadTexture(const std::string &filepath, const int index);
         TerrainMultiTexture();
         ~TerrainMultiTexture();
 
-        GLuint TexId() { return GetGLName(texture); }
-        GLuint TexId(int index) { return GetGLName(uiTextures[index]); }
+        void SetTextureRange(const int index, const float start, const float end);
+        void SetUniforms(Program &program);
+        GLuint UITextureId(const int index);
 };
 

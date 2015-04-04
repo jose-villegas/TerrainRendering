@@ -92,9 +92,6 @@
     <ClInclude Include="AppInterface.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="TerrainTexture.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="OpenFileDialog.h">
       <Filter>Header Files</Filter>
     </ClInclude>

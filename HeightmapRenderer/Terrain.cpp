@@ -17,10 +17,12 @@ void Terrain::display()
     }
     // set shader uniforms
     {
+        this->terrainTextures.SetUniforms(program);
+        // camera
         glm::vec4 lightDirectionCameraSpace =
             TransformationMatrices::View()
             * glm::vec4(0.5f, 0.7f, 0.7f, 0.0f);
-        // set prog uniforms
+        // lighting
         Uniform<glm::vec3>(program, "directionalLight.direction").Set(
             glm::vec3(lightDirectionCameraSpace)
         );
@@ -73,6 +75,8 @@ void Terrain::createTerrain(const int heightmapSize)
 
 void Terrain::createMesh(const int meshResExponent)
 {
+    using namespace  boost::algorithm;
+
     // will not create a mesh until height data is ready
     if(!heightmapCreated) return;
 
@@ -113,7 +117,7 @@ void Terrain::createMesh(const int meshResExponent)
             int yCor = (int)(i * (float)terrainResolution / meshResolution);
             float vertexHeight = heightmap.getValue(xCor, yCor);
             // transform from [-1,1] to [0,1]
-            vertexHeight = std::min(1.0f, std::max(0.0f, (vertexHeight + 1.0f) / 2.0f));
+            vertexHeight = clamp((vertexHeight + 1.0f) / 2.0f, 0.0f, 1.0f);
             // create vertex position
             vertices[i * meshResolution + j] =
                 glm::vec3(

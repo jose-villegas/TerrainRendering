@@ -1,8 +1,9 @@
 #include "Commons.h"
+#include "App.h"
 #include "AppInterface.h"
 #include "TransformationMatrices.h"
-#include "App.h"
 #include "OpenFileDialog.h"
+using namespace boost::algorithm;
 
 void AppInterface::initialize(GLFWwindow * window)
 {
@@ -96,27 +97,54 @@ void AppInterface::draw()
             ImGui::SetNextWindowPos(ImVec2(3, stackedSize.y + 9));
             ImGui::Begin("Terrain Textures", nullptr,
                          ImGuiWindowFlags_AlwaysAutoResize);
-            static float ranges[4] = {0.0};
+            static float ranges[8] = {0.0, 0.25, 0.25, 0.5, 0.5, 0.75, 0.75, 1.0};
             ImGui::Text("Available Ranges");
 
             for(int i = 0; i < 4; i++)
             {
                 if(i > 0) ImGui::SameLine();
 
+                bool rangeChanged = false;
                 ImGui::PushID(i);
                 ImGui::PushStyleColor(ImGuiCol_FrameBg, ImColor::HSV(i / 7.0f, 0.5f, 0.5f));
-                ImGui::PushStyleColor(ImGuiCol_SliderGrab, ImColor::HSV(i / 7.0f, 0.9f, 0.9f));
-                ImGui::VSliderFloat("##v", ImVec2(35, 160), &ranges[i], 0.0f, 1.0f, "");
-                // set proper values ranges
-                ranges[0] = std::min(ranges[0], ranges[1]);
-                ranges[1] = std::min(std::max(ranges[1], ranges[0]), ranges[2]);
-                ranges[2] = std::min(std::max(ranges[2], ranges[1]), ranges[3]);
-                ranges[3] = std::min(std::max(ranges[3], ranges[2]), 1.0f);
+
+                if(ImGui::VSliderFloat("##t", ImVec2(17, 120),
+                                       &ranges[2 * i], 0.0f, 1.0f, ""))
+                    rangeChanged ^= true;
 
                 if(ImGui::IsItemActive() || ImGui::IsItemHovered())
-                    ImGui::SetTooltip("%.3f", ranges[i]);
+                    ImGui::SetTooltip("%.3f", ranges[2 * i]);
 
-                ImGui::PopStyleColor(2);
+                ImGui::SameLine();
+                ImGui::PushStyleColor(ImGuiCol_FrameBg, ImColor::HSV(i / 7.0f, 0.5f, 0.5f));
+
+                if(ImGui::VSliderFloat("##v", ImVec2(17, 120),
+                                       &ranges[2 * i + 1], 0.0f, 1.0f, ""))
+                    rangeChanged = true;
+
+                ImGui::PopStyleColor();
+
+                if(ImGui::IsItemActive() || ImGui::IsItemHovered())
+                    ImGui::SetTooltip("%.3f", ranges[2 * i + 1]);
+
+                // set proper values ranges
+                for(int j = 0; j < 8; j++)
+                {
+                    ranges[j] = clamp(
+                                    ranges[j],
+                                    j == 0 ? 0.0 : ranges[j - 1],
+                                    j == 7 ?  1.0 : ranges[j + 1]
+                                );
+                }
+
+                // set values
+                if(rangeChanged)
+                {
+                    App::Instance()->getTerrain()
+                    .TerrainTextures()
+                    .SetTextureRange(i, ranges[i * 2], ranges[i * 2 + 1]);
+                }
+
                 ImGui::PopID();
             }
 
@@ -125,22 +153,26 @@ void AppInterface::draw()
                 ImGui::PushID(i * 2 + 1);
                 static ImTextureID texId[4] = {};
 
-                if(ImGui::ImageButton(texId[i], ImVec2(27, 27)))
+                if(ImGui::ImageButton(texId[i], ImVec2(34, 34)))
                 {
                     static OpenFileDialog *fileDialog = new OpenFileDialog();
                     fileDialog->ShowDialog();
-                    this->tmtt.loadTexture(fileDialog->FileName, i);
-                    texId[i] = (void *)(intptr_t)tmtt.TexId(i);
+                    // load texture from filename
+                    App::Instance()->getTerrain()
+                    .TerrainTextures()
+                    .loadTexture(fileDialog->FileName, i);
+                    // assign texture to texid interfaces
+                    texId[i] = (void *)(intptr_t)App::Instance()->getTerrain()
+                               .TerrainTextures()
+                               .UITextureId(i);
                 }
-
-                ImVec2 tex_screen_pos = ImGui::GetCursorScreenPos();
 
                 if(ImGui::IsItemHovered())
                 {
                     ImGui::BeginTooltip();
                     ImGui::Image(
                         texId[i],
-                        ImVec2(128, 128),
+                        ImVec2(200, 200),
                         ImVec2(0.0, 0.0), ImVec2(1.0, 1.0),
                         ImColor(255, 255, 255, 255),
                         ImColor(255, 255, 255, 128)

@@ -1,6 +1,6 @@
 #pragma once
 #include "Heightmap.h"
-#include "TerrainPatch.h"
+#include "TerrainMultiTexture.h"
 using namespace oglplus;
 
 class Terrain
@@ -31,6 +31,8 @@ class Terrain
         Context gl;
         // heightmap generator
         Heightmap heightmap;
+        // multitexture handling class
+        TerrainMultiTexture terrainTextures;
 
     public:
         void initialize();
@@ -40,7 +42,9 @@ class Terrain
         void createTerrain(const int heightmapSize);
         void createMesh(const int meshResExponent);
         Heightmap &Heightmap() { return heightmap; }
+        TerrainMultiTexture &TerrainTextures() { return terrainTextures; }
 
+        Terrain(Terrain *rhs) { rhs = this; };
         Terrain();
         ~Terrain();
 };

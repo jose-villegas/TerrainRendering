@@ -1,6 +1,5 @@
 #include "Commons.h"
 #include "App.h"
-#include "TerrainPatch.h"
 #include "TransformationMatrices.h"
 #include "Terrain.h"
 

@@ -118,7 +118,6 @@
     <ClInclude Include="TerrainPatch.h" />
     <ClInclude Include="LibNoise\include\noiseutils.h" />
     <ClInclude Include="MainWindow.h" />
-    <ClInclude Include="TerrainTexture.h" />
     <ClInclude Include="TransformationMatrices.h" />
   </ItemGroup>
   <ItemGroup>

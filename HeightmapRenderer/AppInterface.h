@@ -1,5 +1,6 @@
 #pragma once
-#include "TerrainMultiTexture.h"
+#include "Terrain.h"
+
 class AppInterface
 {
     private:
@@ -7,7 +8,6 @@ class AppInterface
         int meshResolution;
         int heightmapResolution;
         bool wireframeMode;
-        TerrainMultiTexture tmtt;
         oglplus::Context gl;
     public:
         void initialize(GLFWwindow * window);

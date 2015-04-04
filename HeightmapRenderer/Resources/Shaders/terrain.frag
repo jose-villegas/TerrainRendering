@@ -203,57 +203,49 @@ in float height;
 
 layout(location = 0) out vec4 fragColor;
 
-vec3 heightSample[4];
+const int MAX_TERRAIN_TEXTURE_RANGES = 4;
+uniform sampler2DArray terrainTextures;
+uniform vec3 terrainRange[MAX_TERRAIN_TEXTURE_RANGES] = 
+{
+    // min, max, active > 0.0
+    vec3(0.0, 0.1, -1.0), 
+    vec3(0.1, 0.3, -1.0), 
+    vec3(0.3, 0.7, -1.0), 
+    vec3(0.7, 1.0, -1.0)
+};
+
+vec3 heightSample[4] = 
+{
+    vec3(0.1, 0.7, 1.0),
+    vec3(0.7, 0.7, 0.5),
+    vec3(0.3, 0.5, 0.1),
+    vec3(1.0, 0.9, 0.9)
+};
 
 vec3 GenerateTerrainColor(float height)
 {
-    vec3 terrainColor = vec3(0.0, 0.0, 0.0);
+    vec3 terrainColor = vec3(0.0);
+    vec3 terrainSurfaceColor = vec3(0.0);
     float regionMin = 0.0;
     float regionMax = 0.0;
     float regionRange = 0.0;
     float regionWeight = 0.0;
-    
-    // Terrain region 1.
-    regionMin = 0.0;
-    regionMax = 0.1;
-    regionRange = regionMax - regionMin;
-    regionWeight = (regionRange - abs(height - regionMax)) / regionRange;
-    regionWeight = max(0.0, regionWeight);
-    terrainColor += regionWeight *  heightSample[0];
 
-    // Terrain region 2.
-    regionMin = 0.1;
-    regionMax = 0.3;
-    regionRange = regionMax - regionMin;
-    regionWeight = (regionRange - abs(height - regionMax)) / regionRange;
-    regionWeight = max(0.0, regionWeight);
-    terrainColor += regionWeight *  heightSample[1];
-
-    // Terrain region 3.
-    regionMin = 0.3;
-    regionMax = 0.7;
-    regionRange = regionMax - regionMin;
-    regionWeight = (regionRange - abs(height - regionMax)) / regionRange;
-    regionWeight = max(0.0, regionWeight);
-    terrainColor += regionWeight *  heightSample[2];
-
-    // Terrain region 4.
-    regionMin = 0.7;
-    regionMax = 1.0;
-    regionRange = regionMax - regionMin;
-    regionWeight = (regionRange - abs(height - regionMax)) / regionRange;
-    regionWeight = max(0.0, regionWeight);
-    terrainColor += regionWeight *  heightSample[3];
+    for(int i = 0; i < MAX_TERRAIN_TEXTURE_RANGES; i++)
+    {
+        regionMin = terrainRange[i].x;
+        regionMax = terrainRange[i].y;
+        regionRange = regionMax - regionMin;
+        regionWeight = max(0.0, (regionRange - abs(height - regionMax)) / regionRange);
+        terrainSurfaceColor = terrainRange[i].z > 0.0 ? vec3(0.0) : heightSample[i];
+        terrainColor += regionWeight * terrainSurfaceColor;
+    }
 
     return terrainColor;
 }
 
 void main()
 {
-    heightSample[0] = vec3(0.1, 0.7, 1.0);
-    heightSample[1] = vec3(0.7, 0.7, 0.5);
-    heightSample[2] = vec3(0.3, 0.5, 0.1);
-    heightSample[3] = vec3(1.0, 0.9, 0.9);
     vec3 surfaceNormal = normalize(normal);
     vec3 surfaceColor = vec3(0.0, 0.0, 0.0);
     surfaceColor = GenerateTerrainColor(height);
