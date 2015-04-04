@@ -1,3 +1,7 @@
+// os specific includes
+#include <windows.h>
+#include <commdlg.h>
+#include <tchar.h>
 // opengl and context creation headers
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
@@ -52,6 +56,8 @@
 // ui library imgui (inmediate mode gui)
 #include "ImGui/imgui.h"
 #include "ImGui/imgui_impl_glfw_gl3.h"
+// image loading library
+#include <FreeImage.h>
 // parallel patterns library (ppl) from Windows for concurrency and parallelism
 #include <ppl.h>
 // namespace assignations

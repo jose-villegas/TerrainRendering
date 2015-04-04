@@ -67,7 +67,6 @@ void Terrain::createTerrain(const int heightmapSize)
     heightmap.setSize(terrainResolution, terrainResolution);
     heightmap.setBounds(0, 4, 0, 4);
     heightmap.build();
-    heightmap.writeToFile("terrain");
     heightmapCreated = true;
     meshCreated = false;
 }
@@ -77,7 +76,7 @@ void Terrain::createMesh(const int meshResExponent)
     // will not create a mesh until height data is ready
     if(!heightmapCreated) return;
 
-    int newResolution = std::pow(2, meshResExponent) + 1;
+    int newResolution = (int)std::pow(2, meshResExponent) + 1;
 
     // no need to redo the same operation
     if(newResolution == meshResolution && meshCreated) return;
@@ -99,8 +98,6 @@ void Terrain::createMesh(const int meshResExponent)
     // index buffer restart triangle strip
     int restartIndex = meshResolution * meshResolution;
     float enlargeMap = 30.0;
-    // maximum height / texel space
-    float heightTexelRatio = 1.0 / (meshResolution / enlargeMap);
     // parallel modification
     concurrency::parallel_for(int(0), meshResolution, [&](int i)
     {
@@ -112,8 +109,8 @@ void Terrain::createMesh(const int meshResExponent)
             float colScale = enlargeMap * (float)j / (meshResolution - 1);
             float rowScale = enlargeMap * (float)i / (meshResolution - 1);
             // height map positions
-            int xCor = j * (float)terrainResolution / meshResolution;
-            int yCor = i * (float)terrainResolution / meshResolution;
+            int xCor = (int)(j * (float)terrainResolution / meshResolution);
+            int yCor = (int)(i * (float)terrainResolution / meshResolution);
             float vertexHeight = heightmap.getValue(xCor, yCor);
             // transform from [-1,1] to [0,1]
             vertexHeight = std::min(1.0f, std::max(0.0f, (vertexHeight + 1.0f) / 2.0f));
@@ -127,13 +124,6 @@ void Terrain::createMesh(const int meshResExponent)
             // also create the appropiate texcoord
             texCoords[i * meshResolution + j] =
                 glm::vec2(textureU * colScale, textureV * rowScale);
-            // calculate approximate normal at vertex position
-            float h0 = heightmap.getValue(xCor + 1, yCor);
-            float h1 = heightmap.getValue(xCor - 1, yCor);
-            float h2 = heightmap.getValue(xCor, yCor + 1);
-            float h3 = heightmap.getValue(xCor, yCor + 1);
-            normals[i * meshResolution + j] =
-                glm::normalize(glm::vec3(h1 - h0, 2.0 * heightTexelRatio, h3 - h2));
 
             // create triangle strip indices
             if(i != meshResolution - 1)
@@ -148,6 +138,67 @@ void Terrain::createMesh(const int meshResExponent)
         {
             int restartAt = 2 * (i + 1) * meshResolution + i;
             indices[restartAt] = restartIndex;
+        }
+    });
+    // calculate face normals
+    std::array<std::vector<std::vector<glm::vec3>>, 2> faceNormals;
+    faceNormals[0] = faceNormals[1] = std::vector<std::vector<glm::vec3>>
+                                      (meshResolution - 1, std::vector<glm::vec3>(meshResolution - 1));
+    concurrency::parallel_for(int(0), meshResolution - 1, [&](int i)
+    {
+        for(int j = 0; j < meshResolution - 1; j++)
+        {
+            glm::vec3 triangle0[] =
+            {
+                vertices[i * meshResolution + j],
+                vertices[(i + 1) * meshResolution + j],
+                vertices[(i + 1) * meshResolution + j + 1]
+            };
+            glm::vec3 triangle1[] =
+            {
+                vertices[(i + 1) * meshResolution + j + 1],
+                vertices[i * meshResolution + j + 1],
+                vertices[i * meshResolution + j]
+            };
+            glm::vec3 t0Normal = glm::cross(triangle0[0] - triangle0[1],
+                                            triangle0[1] - triangle0[2]);
+            glm::vec3 t1Normal = glm::cross(triangle1[0] - triangle1[1],
+                                            triangle1[1] - triangle1[2]);
+            faceNormals[0][i][j] = glm::normalize(t0Normal);
+            faceNormals[1][i][j] = glm::normalize(t1Normal);
+        }
+    });
+    concurrency::parallel_for(int(0), meshResolution - 1, [&](int i)
+    {
+        for(int j = 0; j < meshResolution; j++)
+        {
+            glm::vec3 fNormal = glm::vec3(0.f, 0.f, 0.f);
+
+            // upper left faces
+            if(j != 0 && i != 0)
+            {
+                fNormal += faceNormals[0][i - 1][j - 1] + faceNormals[1][i - 1][j - 1];
+            }
+
+            // upper right faces
+            if(i != 0 && j != meshResolution - 1)
+            {
+                fNormal += faceNormals[0][i - 1][j];
+            }
+
+            // bottom right faces
+            if(i != meshResolution - 1 && j != meshResolution - 1)
+            {
+                fNormal += faceNormals[0][i][j] + faceNormals[1][i][j];
+            }
+
+            // bottom left faces
+            if(i != meshResolution - 1 && j != 0)
+            {
+                fNormal += faceNormals[1][i][j - 1];
+            }
+
+            normals[i * meshResolution + j] = glm::normalize(fNormal);
         }
     });
     // upload position data to the gpu

@@ -27,6 +27,8 @@ void Heightmap::build()
 
 void Heightmap::writeToFile(const std::string & filename)
 {
+    if(width <= 0 || heigth <= 0) return;
+
     renderer.Render();
     utils::WriterBMP writer;
     writer.SetSourceImage(image);
@@ -40,7 +42,7 @@ float Heightmap::getValue(int x, int y)
 }
 
 Heightmap::Heightmap() : bottomLeft(0), bottomRight(0),
-    topRigth(5), topLeft(5)
+    topRigth(5), topLeft(5), width(0), heigth(0)
 {
     heightmapBuilder.SetSourceModule(noiseGen);
     heightmapBuilder.SetDestNoiseMap(heightmap);

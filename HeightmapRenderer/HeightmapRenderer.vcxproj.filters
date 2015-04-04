@@ -51,6 +51,12 @@
     <ClCompile Include="AppInterface.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="TerrainMultiTexture.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="OpenFileDialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MainWindow.h">
@@ -86,6 +92,12 @@
     <ClInclude Include="AppInterface.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="TerrainTexture.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="OpenFileDialog.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\Shaders\phong.vert" />
@@ -96,10 +108,5 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="app_0.log" />
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="terrain.bmp">
-      <Filter>Resource Files</Filter>
-    </Image>
   </ItemGroup>
 </Project>

@@ -41,6 +41,8 @@ void App::Configure()
 {
     // ui library
     gui.initialize(this->appWindow->getWindow());
+    // initialize image loading library
+    FreeImage_Initialise();
     // set app callbacks
     glfwSetKeyCallback(this->appWindow->getWindow(), App::onKeyPress);
     glfwSetWindowSizeCallback(this->appWindow->getWindow(), App::onWindowResize);
@@ -89,6 +91,10 @@ void App::Configure()
                             << BOOST_VERSION / 100 % 1000 << "."    // minior version
                             << BOOST_VERSION % 100;                 // patch level
     BOOST_LOG_TRIVIAL(info) << "Ocornut's IMGUI " << ImGui::GetVersion();
+    BOOST_LOG_TRIVIAL(info) << "FreeImage "
+                            << std::to_string(FREEIMAGE_MAJOR_VERSION)
+                            << "." + std::to_string(FREEIMAGE_MINOR_VERSION)
+                            << "." + std::to_string(FREEIMAGE_RELEASE_SERIAL);
 }
 
 MainWindow * App::CreateContext()
@@ -112,8 +118,8 @@ MainWindow * App::CreateContext()
     );
     glfwSetWindowPos(
         newWindow->getWindow(),
-        (mode->width -  0.75 * mode->width) / 2,
-        (mode->height - 0.75 * mode->height) / 2
+        (int)(mode->width -  0.75 * mode->width) / 2,
+        (int)(mode->height - 0.75 * mode->height) / 2
     );
     // make window as current rendering context
     newWindow->makeCurrentContext();
@@ -131,6 +137,7 @@ MainWindow * App::CreateContext()
 App::~App()
 {
     gui.terminate();
+    FreeImage_DeInitialise();
     delete this->appWindow;
     glfwTerminate();
 }

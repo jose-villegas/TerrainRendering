@@ -31,14 +31,15 @@ class Terrain
         Context gl;
         // heightmap generator
         Heightmap heightmap;
-    public:
 
+    public:
         void initialize();
         void display();
         void bindBuffers();
         // creates a terrain of 2^sizeExponent + 1 size
         void createTerrain(const int heightmapSize);
         void createMesh(const int meshResExponent);
+        Heightmap &Heightmap() { return heightmap; }
 
         Terrain();
         ~Terrain();
