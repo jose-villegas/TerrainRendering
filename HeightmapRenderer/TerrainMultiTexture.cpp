@@ -50,6 +50,7 @@ void TerrainMultiTexture::loadTexture(const std::string &filepath,
                                   bitsPerPixel == 24 ? PixelDataFormat::BGR :
                                   bitsPerPixel == 16 ? PixelDataFormat::RG :
                                   PixelDataFormat::Red;
+    // pass data to the texture array
     gl.Bound(Texture::Target::_2DArray, this->texture)
     .MinFilter(TextureMinFilter::Linear)
     .MagFilter(TextureMagFilter::Linear)
@@ -57,7 +58,18 @@ void TerrainMultiTexture::loadTexture(const std::string &filepath,
     .WrapS(TextureWrap::Repeat)
     .WrapT(TextureWrap::Repeat)
     .SubImage3D(0, 0, 0, index, 512, 512, 1, pixelFormat,
-                PixelDataType::UnsignedByte, bits);;
+                PixelDataType::UnsignedByte, bits);
+    // pass data to interface texture
+    gl.Bound(Texture::Target::_2D, this->uiTextures[index])
+    .Image2D(0, PixelDataInternalFormat::RGBA8, 512, 512, 0,
+             pixelFormat, PixelDataType::UnsignedByte, bits)
+    .MinFilter(TextureMinFilter::Linear)
+    .MagFilter(TextureMagFilter::Linear)
+    .Anisotropy(2.0f)
+    .WrapS(TextureWrap::Repeat)
+    .WrapT(TextureWrap::Repeat);
+    // unload data from memory once uploaded to gpu
+    FreeImage_Unload(dib);
 }
 
 TerrainMultiTexture::TerrainMultiTexture() : rangeStart(0.0f), rangeEnd(0.0f)

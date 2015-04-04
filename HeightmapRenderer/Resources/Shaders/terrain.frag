@@ -203,42 +203,60 @@ in float height;
 
 layout(location = 0) out vec4 fragColor;
 
-vec3 heightSample[3];
+vec3 heightSample[4];
+
+vec3 GenerateTerrainColor(float height)
+{
+    vec3 terrainColor = vec3(0.0, 0.0, 0.0);
+    float regionMin = 0.0;
+    float regionMax = 0.0;
+    float regionRange = 0.0;
+    float regionWeight = 0.0;
+    
+    // Terrain region 1.
+    regionMin = 0.0;
+    regionMax = 0.1;
+    regionRange = regionMax - regionMin;
+    regionWeight = (regionRange - abs(height - regionMax)) / regionRange;
+    regionWeight = max(0.0, regionWeight);
+    terrainColor += regionWeight *  heightSample[0];
+
+    // Terrain region 2.
+    regionMin = 0.1;
+    regionMax = 0.3;
+    regionRange = regionMax - regionMin;
+    regionWeight = (regionRange - abs(height - regionMax)) / regionRange;
+    regionWeight = max(0.0, regionWeight);
+    terrainColor += regionWeight *  heightSample[1];
+
+    // Terrain region 3.
+    regionMin = 0.3;
+    regionMax = 0.7;
+    regionRange = regionMax - regionMin;
+    regionWeight = (regionRange - abs(height - regionMax)) / regionRange;
+    regionWeight = max(0.0, regionWeight);
+    terrainColor += regionWeight *  heightSample[2];
+
+    // Terrain region 4.
+    regionMin = 0.7;
+    regionMax = 1.0;
+    regionRange = regionMax - regionMin;
+    regionWeight = (regionRange - abs(height - regionMax)) / regionRange;
+    regionWeight = max(0.0, regionWeight);
+    terrainColor += regionWeight *  heightSample[3];
+
+    return terrainColor;
+}
 
 void main()
 {
-    heightSample[0] = vec3(0.3, 0.05, 0.1);
-    heightSample[1] = vec3(0.1, 0.6, 0.4);
-    heightSample[2] = vec3(0.7, 0.9, 0.8);
+    heightSample[0] = vec3(0.1, 0.7, 1.0);
+    heightSample[1] = vec3(0.7, 0.7, 0.5);
+    heightSample[2] = vec3(0.3, 0.5, 0.1);
+    heightSample[3] = vec3(1.0, 0.9, 0.9);
     vec3 surfaceNormal = normalize(normal);
     vec3 surfaceColor = vec3(0.0, 0.0, 0.0);
-    float fScale = height;
-    const float fRange1 = 0.15f;
-    const float fRange2 = 0.3f;
-    const float fRange3 = 0.65f;
-    const float fRange4 = 0.85f;
-
-    if(fScale >= -1.0 && fScale <= fRange1) surfaceColor = heightSample[0];
-    else if(fScale <= fRange2)
-    {
-        fScale -= fRange1;
-        fScale /= (fRange2 - fRange1);
-        float fScale2 = fScale;
-        fScale = 1.0 - fScale;
-        surfaceColor += heightSample[0] * fScale;
-        surfaceColor += heightSample[1] * fScale2;
-    }
-    else if(fScale <= fRange3) surfaceColor = heightSample[1];
-    else if(fScale <= fRange4)
-    {
-        fScale -= fRange3;
-        fScale /= (fRange4 - fRange3);
-        float fScale2 = fScale;
-        fScale = 1.0 - fScale;
-        surfaceColor += heightSample[1] * fScale;
-        surfaceColor += heightSample[2] * fScale2;
-    }
-    else surfaceColor = heightSample[2];
+    surfaceColor = GenerateTerrainColor(height);
 
     vec3 materialSpecular = material.specular * material.shininessStrength;
     // total light from all light sources

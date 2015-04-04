@@ -120,37 +120,31 @@ void AppInterface::draw()
                 ImGui::PopID();
             }
 
-            ImVec2 tex_screen_pos = ImGui::GetCursorScreenPos();
-            float tex_w = (float)ImGui::GetIO().Fonts->TexWidth;
-            float tex_h = (float)ImGui::GetIO().Fonts->TexHeight;
-
             for(int i = 0; i < 4; i++)
             {
                 ImGui::PushID(i * 2 + 1);
+                static ImTextureID texId[4] = {};
 
-                if(ImGui::ImageButton(io.Fonts->TexID, ImVec2(27, 27)))
+                if(ImGui::ImageButton(texId[i], ImVec2(27, 27)))
                 {
                     static OpenFileDialog *fileDialog = new OpenFileDialog();
                     fileDialog->ShowDialog();
                     this->tmtt.loadTexture(fileDialog->FileName, i);
-                    // std::cout << this->tmtt.TexId();
+                    texId[i] = (void *)(intptr_t)tmtt.TexId(i);
                 }
+
+                ImVec2 tex_screen_pos = ImGui::GetCursorScreenPos();
 
                 if(ImGui::IsItemHovered())
                 {
                     ImGui::BeginTooltip();
-                    float focus_sx = tex_w;
-                    float focus_sy = tex_h;
-                    float focus_x = std::min(std::max(ImGui::GetMousePos().x - tex_screen_pos.x -
-                                                      focus_sx * 0.5f, 0.0f), tex_w - focus_sx);
-                    float focus_y = std::min(std::max(ImGui::GetMousePos().y - tex_screen_pos.y -
-                                                      focus_sy * 0.5f, 0.0f), tex_h - focus_sy);
-                    ImVec2 uv0 = ImVec2((focus_x) / tex_w, (focus_y) / tex_h);
-                    ImVec2 uv1 = ImVec2((focus_x + focus_sx) / tex_w, (focus_y + focus_sy) / tex_h);
-                    ImGui::Image(io.Fonts->TexID, ImVec2(tex_w, tex_h), uv0, uv1, ImColor(255, 255,
-                                 255,
-                                 255),
-                                 ImColor(255, 255, 255, 128));
+                    ImGui::Image(
+                        texId[i],
+                        ImVec2(128, 128),
+                        ImVec2(0.0, 0.0), ImVec2(1.0, 1.0),
+                        ImColor(255, 255, 255, 255),
+                        ImColor(255, 255, 255, 128)
+                    );
                     ImGui::EndTooltip();
                 }
 
@@ -160,7 +154,6 @@ void AppInterface::draw()
 
             ImGui::End();
         }
-        ImGui::ShowTestWindow();
     }
 }
 

@@ -4,6 +4,7 @@ class TerrainMultiTexture
 {
     private:
         Texture texture;
+        Texture uiTextures[4];
         Context gl;
         // range
         float rangeStart;
@@ -15,5 +16,6 @@ class TerrainMultiTexture
         ~TerrainMultiTexture();
 
         GLuint TexId() { return GetGLName(texture); }
+        GLuint TexId(int index) { return GetGLName(uiTextures[index]); }
 };
 
