@@ -17,34 +17,21 @@ void AppInterface::draw()
     {
         static ImVec2 stackedSize;
         ImGuiIO& io = ImGui::GetIO();
-        // performance window
-        {
-            ImGui::SetNextWindowSize(ImVec2(150, 50));
-            ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x - 150 - 3,
-                                           io.DisplaySize.y - 50 - 3));
-            ImGui::Begin("Performance Window", nullptr,
-                         ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
-                         ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
-            ImGui::Text("Performance");
-            ImGui::Separator();
-            ImGui::Text("FPS: (%.1f)", io.Framerate);
-            ImGui::End();
-        }
         // mesh data input window
         {
             ImGui::SetNextWindowPos(ImVec2(3, 3));
             ImGui::Begin("Terrain Generation Options", nullptr,
-                         ImGuiWindowFlags_AlwaysAutoResize);
-            ImGui::SliderInt("Mesh Resolution", &meshResolution, 2, 11,
+                         ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings |
+                         ImGuiWindowFlags_NoMove);
+            ImGui::SliderInt("Mesh Resolution", &meshResolution, 5, 11,
                              std::to_string((int)std::pow(2, meshResolution) + 1).c_str());
-            ImGui::InputInt("Heightmap Resolution", &heightmapResolution, 1, 16);
-            // bound the int range
-            heightmapResolution = std::max(16, std::min(8192, heightmapResolution));
+            ImGui::SliderInt("Heightmap Resolution", &heightmapResolution, 5, 11,
+                             std::to_string((int)std::pow(2, heightmapResolution)).c_str());
             // generate new terrain on button press
 
             if(ImGui::Button("Generate Terrain"))
             {
-                App::Instance()->getTerrain().createTerrain(heightmapResolution);
+                App::Instance()->getTerrain().createTerrain(std::pow(2, heightmapResolution));
                 App::Instance()->getTerrain().createMesh(meshResolution);
             }
 
@@ -69,7 +56,14 @@ void AppInterface::draw()
             if(ImGui::SliderFloat("Maximum Height", &maxHeight, 0.001f, 15.0f))
             {
                 TransformationMatrices::Model(
-                    glm::scale(glm::mat4(), glm::vec3(1, maxHeight, 1))
+                    glm::scale(glm::mat4(), glm::vec3(terrainScale, maxHeight, terrainScale))
+                );
+            }
+
+            if(ImGui::SliderFloat("Terrain Scale", &terrainScale, 1.0f, 300.0f))
+            {
+                TransformationMatrices::Model(
+                    glm::scale(glm::mat4(), glm::vec3(terrainScale, maxHeight, terrainScale))
                 );
             }
 
@@ -80,7 +74,8 @@ void AppInterface::draw()
         {
             ImGui::SetNextWindowPos(ImVec2(3, stackedSize.y + 6));
             ImGui::Begin("Rendering Options", nullptr,
-                         ImGuiWindowFlags_AlwaysAutoResize);
+                         ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings |
+                         ImGuiWindowFlags_NoMove);
             ImGui::Checkbox("Use Wireframe Mode", &wireframeMode);
 
             if(wireframeMode)
@@ -96,8 +91,8 @@ void AppInterface::draw()
         {
             ImGui::SetNextWindowPos(ImVec2(3, stackedSize.y + 9));
             ImGui::Begin("Terrain Textures", nullptr,
-                         ImGuiWindowFlags_AlwaysAutoResize);
-            static float ranges[8] = {0.0, 0.25, 0.25, 0.5, 0.5, 0.75, 0.75, 1.0};
+                         ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings |
+                         ImGuiWindowFlags_NoMove);
             ImGui::Text("Available Ranges");
 
             for(int i = 0; i < 4; i++)
@@ -174,6 +169,44 @@ void AppInterface::draw()
                 ImGui::PopID();
             }
 
+            stackedSize.y += ImGui::GetWindowSize().y;
+            ImGui::End();
+        }
+        // shadow map
+        {
+            App::Instance()->getTerrain().generateShadowmap(
+                glm::vec3(
+                    std::sin(glfwGetTime()),
+                    std::cos(glfwGetTime()),
+                    0.7f
+                ) * 15.0f
+            );
+            ImGui::SetNextWindowPos(ImVec2(3, stackedSize.y + 6));
+            ImGui::Begin("Shadow Map", nullptr,
+                         ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings |
+                         ImGuiWindowFlags_NoMove);
+            ImGui::Image(
+                (void *)(intptr_t)oglplus::GetName(
+                    App::Instance()->getTerrain().TerrainShadowmap()
+                ),
+                ImVec2(328, 328),
+                ImVec2(0.0, 0.0), ImVec2(1.0, 1.0),
+                ImColor(255, 255, 255, 255),
+                ImColor(255, 255, 255, 128)
+            );
+            ImGui::End();
+        }
+        // performance window
+        {
+            ImGui::SetNextWindowSize(ImVec2(150, 50));
+            ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x - 150 - 3,
+                                           io.DisplaySize.y - 50 - 3));
+            ImGui::Begin("Performance Window", nullptr,
+                         ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
+                         ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
+            ImGui::Text("Performance");
+            ImGui::Separator();
+            ImGui::Text("FPS: (%.1f)", io.Framerate);
             ImGui::End();
         }
     }
@@ -197,8 +230,16 @@ void AppInterface::terminate()
 AppInterface::AppInterface()
 {
     this->maxHeight = 1.0;
-    this->meshResolution = 6;
-    this->heightmapResolution = 256;
+    this->terrainScale = 15.f;
+    this->meshResolution = 8;
+    this->heightmapResolution = 8;
+
+    for(int i = 0; i < 4; i++)
+    {
+        ranges[i * 2] = (float)i / 4;
+        ranges[i * 2 + 1] = float(i + 11) / 4;
+    }
+
     this->wireframeMode = false;
 }
 

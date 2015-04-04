@@ -59,6 +59,63 @@ void Terrain::bindBuffers()
     buffer[3].Bind(Buffer::Target::ElementArray);
 }
 
+void Terrain::generateShadowmap(glm::vec3 lightPos)
+{
+    using namespace noise::utils;
+
+    // can't create shadowmap without height info
+    if(!heightmapCreated) return;
+
+    int mapSize = terrainResolution;
+    // initialize shadow map
+    std::vector<unsigned char>shadowMap(mapSize * mapSize * 3);
+    // solve heightmap ray trace
+    concurrency::parallel_for(int(0), mapSize, [&](int z)
+    {
+        for(int x = 0; x < mapSize; x++)
+        {
+            // height map positions
+            glm::vec3 currentPos = glm::vec3((float)x, heightmap.getValue(x, z), (float)z);
+            // calculate ray from light direction
+            glm::vec3 lightDir = glm::normalize(lightPos - currentPos);
+            shadowMap[z * mapSize * 3 + x * 3] = 255;
+            shadowMap[z * mapSize * 3 + x * 3 + 1] = 255;
+            shadowMap[z * mapSize * 3 + x * 3 + 2] = 255;
+
+            // start ray cast test
+            while(currentPos.x >= 0.0f
+                  && currentPos.x < mapSize
+                  && currentPos.z >= 0
+                  && currentPos.z < mapSize
+                  && currentPos != lightPos
+                  && currentPos.y < 1.0f)
+            {
+                currentPos += lightDir;
+                int lerpX = (int)std::round(currentPos.x);
+                int lerpZ = (int)std::round(currentPos.z);
+
+                // ray hit
+                if(currentPos.y <= heightmap.getValue(lerpX, lerpZ))
+                {
+                    shadowMap[z * mapSize * 3 + x * 3] = 0;
+                    shadowMap[z * mapSize * 3 + x * 3 + 1] = 0;
+                    shadowMap[z * mapSize * 3 + x * 3 + 2] = 0;
+                    break;
+                }
+            }
+        }
+    });
+    // pass raw data to texture
+    gl.Bound(Texture::Target::_2D, this->terrainShadowmap)
+    .Image2D(0, PixelDataInternalFormat::RGBA8, mapSize, mapSize, 0,
+             PixelDataFormat::RGB, PixelDataType::UnsignedByte, &shadowMap[0])
+    .MinFilter(TextureMinFilter::Linear)
+    .MagFilter(TextureMagFilter::Linear)
+    .WrapS(TextureWrap::Repeat)
+    .WrapT(TextureWrap::Repeat);
+    // delete reserved memory once uploaded to gpu
+}
+
 void Terrain::createTerrain(const int heightmapSize)
 {
     // no need to redo the same operation
@@ -101,7 +158,6 @@ void Terrain::createMesh(const int meshResExponent)
     float textureV = (float)meshResolution * 0.1f;
     // index buffer restart triangle strip
     int restartIndex = meshResolution * meshResolution;
-    float enlargeMap = 30.0;
     // parallel modification
     concurrency::parallel_for(int(0), meshResolution, [&](int i)
     {
@@ -109,9 +165,9 @@ void Terrain::createMesh(const int meshResExponent)
 
         for(int j = 0; j < meshResolution; j++)
         {
-            // scales to x, z [0.0, 1.0]
-            float colScale = enlargeMap * (float)j / (meshResolution - 1);
-            float rowScale = enlargeMap * (float)i / (meshResolution - 1);
+            // scales to x, z [0.0, enlargeMap]
+            float colScale = (float)j / (meshResolution - 1);
+            float rowScale = (float)i / (meshResolution - 1);
             // height map positions
             int xCor = (int)(j * (float)terrainResolution / meshResolution);
             int yCor = (int)(i * (float)terrainResolution / meshResolution);
@@ -121,15 +177,15 @@ void Terrain::createMesh(const int meshResExponent)
             // create vertex position
             vertices[i * meshResolution + j] =
                 glm::vec3(
-                    -enlargeMap / 2.0f + colScale,
+                    -0.5f + colScale,
                     vertexHeight,
-                    -enlargeMap / 2.0f + rowScale
+                    -0.5f + rowScale
                 );
             // also create the appropiate texcoord
             texCoords[i * meshResolution + j] =
                 glm::vec2(
-                    textureU * (colScale / enlargeMap),
-                    textureV * (rowScale / enlargeMap)
+                    textureU * colScale,
+                    textureV * rowScale
                 );
 
             // create triangle strip indices
@@ -239,6 +295,8 @@ void Terrain::createMesh(const int meshResExponent)
         gl.PrimitiveRestartIndex(restartIndex);
     }
     meshCreated = true;
+    // test shadow
+    generateShadowmap(glm::vec3(0.5f, 0.7f, 0.7f) * 15.0f);
 }
 
 Terrain::Terrain() : terrainMaxHeight(1.0f), heightmapCreated(false),
@@ -293,6 +351,9 @@ void Terrain::initialize()
     );
     Uniform<GLfloat>(program, "maxHeight").Set(
         this->terrainMaxHeight
+    );
+    TransformationMatrices::Model(
+        glm::scale(glm::mat4(), glm::vec3(15, terrainMaxHeight, 15))
     );
     terrainMesh.Bind();
     // context flags

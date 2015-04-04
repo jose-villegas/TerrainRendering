@@ -8,6 +8,8 @@ class AppInterface
         int meshResolution;
         int heightmapResolution;
         bool wireframeMode;
+        float terrainScale;
+        float ranges[8];
         oglplus::Context gl;
     public:
         void initialize(GLFWwindow * window);

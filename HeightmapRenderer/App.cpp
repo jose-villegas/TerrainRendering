@@ -31,7 +31,7 @@ void App::onWindowResize(GLFWwindow *window, int width, int height)
         glm::perspective(
             glm::radians(60.0f),
             (float)width / height,
-            0.1f, 100.0f
+            0.1f, 500.0f
         )
     );
 }

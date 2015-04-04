@@ -29,6 +29,8 @@ class Terrain
         VertexShader vertexShader;
         Program program;
         Context gl;
+        // terrain shadows, generated with heightmap info
+        Texture terrainShadowmap;
         // heightmap generator
         Heightmap heightmap;
         // multitexture handling class
@@ -38,6 +40,7 @@ class Terrain
         void initialize();
         void display();
         void bindBuffers();
+        void generateShadowmap(glm::vec3 lightPos);
         // creates a terrain of 2^sizeExponent + 1 size
         void createTerrain(const int heightmapSize);
         void createMesh(const int meshResExponent);
@@ -45,6 +48,7 @@ class Terrain
         TerrainMultiTexture &TerrainTextures() { return terrainTextures; }
 
         Terrain(Terrain *rhs) { rhs = this; };
+        Texture &TerrainShadowmap() { return terrainShadowmap; }
         Terrain();
         ~Terrain();
 };
