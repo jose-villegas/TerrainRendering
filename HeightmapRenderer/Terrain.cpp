@@ -3,6 +3,58 @@
 #include "TransformationMatrices.h"
 using namespace boost::algorithm;
 
+static glm::vec3 lerp(const glm::vec3& A, const glm::vec3& B, float t)
+{
+    return A * t + B * (1.f - t);
+}
+
+glm::vec3 Terrain::calculateLightDir(float time)
+{
+    float dirX = std::sin(time);
+    float dirY = std::cos(time) + 0.7f;
+    float dirZ = 0.7;
+    return glm::vec3(dirX, std::abs(dirY), dirZ);
+}
+
+void Terrain::calculateLightDir(float time, glm::vec3 &outDir,
+                                glm::vec3 &outColor)
+{
+    outColor = glm::vec3(1.0f, 1.0f, 0.86f);
+    float dirX = std::sin(time);
+    float dirY = std::cos(time) + 0.7f;
+    float dirZ = 0.7f;
+
+    // day light gradually turn to dawn
+    if(dirY >= 0.3f)
+    {
+        outColor =
+            lerp(
+                glm::vec3(1.0f, 1.00f, 0.86f),
+                glm::vec3(1.0f, 0.23f, 0.23f),
+                (dirY - 0.3f) / 1.4
+            );
+    }
+
+    if(dirY < 0.3 && dirY > 0.0f)
+    {
+        outColor =
+            lerp(
+                glm::vec3(1.0f, 0.23f, 0.23f),
+                glm::vec3(0.01, 0.01, 0.01),
+                dirY * (1.0f / 0.3f)
+            );
+    }
+
+    // night moonlight
+    if(dirY <= 0.0f)
+    {
+        float moonFactor = (1.0 / 0.3) * std::abs(dirY);
+        outColor = glm::vec3(0.07, 0.23, 0.63) * moonFactor;
+    }
+
+    outDir = glm::vec3(dirX, std::abs(dirY), dirZ);
+}
+
 void Terrain::display()
 {
     if(!meshCreated) return;
@@ -19,18 +71,17 @@ void Terrain::display()
     // set shader uniforms
     {
         this->terrainTextures.SetUniforms(program);
-        // camera
-        glm::vec4 lightDirectionCameraSpace =
-            TransformationMatrices::View()
-            * glm::vec4(
-                std::sin(glfwGetTime() * 0.1),
-                std::cos(glfwGetTime() * 0.1) + 0.7,
-                0.7,
-                0.0f
-            );
+        static glm::vec3 lightColor, lightDir;
+        // lighting calculations
+        calculateLightDir(glfwGetTime() * 0.1, lightDir, lightColor);
+        glm::vec4 lightDirectionCameraSpace = TransformationMatrices::View()
+                                              * glm::vec4(lightDir, 0.0f);
         // lighting
         Uniform<glm::vec3>(program, "directionalLight.direction").Set(
             glm::vec3(lightDirectionCameraSpace)
+        );
+        Uniform<glm::vec3>(program, "directionalLight.base.color").Set(
+            lightColor
         );
         // set scene matrices uniforms
         Uniform<glm::mat4>(program, "matrix.modelViewProjection").Set(
@@ -41,6 +92,10 @@ void Terrain::display()
         );
         Uniform<glm::mat4>(program, "matrix.normal").Set(
             TransformationMatrices::Normal()
+        );
+        // shader time handler
+        Uniform<GLfloat>(program, "currentLightmap").Set(
+            glfwGetTime() / this->lightmapsFrequency
         );
     }
     // draw mesh
@@ -57,13 +112,13 @@ void Terrain::display()
         .WrapS(TextureWrap::Repeat)
         .WrapT(TextureWrap::Repeat)
         .Image3D(0, PixelDataInternalFormat::R8, terrainResolution,
-                 terrainResolution, (int)std::ceil(this->lightmapsFrequency), 0,
+                 terrainResolution, this->lightmapsFrequency, 0,
                  PixelDataFormat::Red, PixelDataType::UnsignedByte, terrainLightmapsData);
         BOOST_LOG_TRIVIAL(info) << "Baking Done, "
-                                << (int)std::ceil(this->lightmapsFrequency)
+                                << this->lightmapsFrequency
                                 << " lightmaps created, "
-                                << this->lightmapsFrequency / 24.0f
-                                << "/h";
+                                << (float)this->lightmapsFrequency / 24.0f
+                                << " per hour";
         bakingDone = false;
         delete[]terrainLightmapsData;
     }
@@ -300,14 +355,14 @@ void Terrain::createTerrain(const int heightmapSize)
     .Set(glm::vec2(terrainResolution, terrainResolution));
     // reserve memory in main thread for new lightmap data
     terrainLightmapsData = new unsigned char[
-        this->terrainResolution * this->terrainResolution * 24
+        this->terrainResolution * this->terrainResolution * 72
     ];
 
     // wait if still working on previous data
     if(this->bakingThread.joinable()) this->bakingThread.join();
 
     // bake all the lightmaps in a separate thread so it doesn't freeze the main thread
-    this->bakingThread = std::thread(&Terrain::bakeTimeOfTheDayShadowmap, this, 24);
+    this->bakingThread = std::thread(&Terrain::bakeTimeOfTheDayShadowmap, this, 72);
 }
 
 void Terrain::createMesh(const int meshResExponent)
@@ -525,10 +580,11 @@ void Terrain::initialize()
     program.Use();
     // set prog uniforms
     Uniform<GLfloat>(program, "directionalLight.base.intensity").Set(
-        1.0f
+        0.85f
     );
     Uniform<glm::vec3>(program, "directionalLight.base.color").Set(
-        glm::vec3(1.0f)
+        // full sunlight
+        glm::vec3(1.0f, 1.0f, 0.9f)
     );
     Uniform<glm::vec3>(program, "directionalLight.direction").Set(
         glm::vec3(0.5f, 0.7f, 0.7f)
@@ -549,7 +605,7 @@ void Terrain::initialize()
         glm::vec3(0.2, 0.95, 0.15)
     );
     Uniform<GLfloat>(program, "material.shininessStrength").Set(
-        0.0f
+        0.016f
     );
     Uniform<GLfloat>(program, "maxHeight").Set(
         this->terrainMaxHeight
@@ -572,18 +628,16 @@ void Terrain::bakeTimeOfTheDayShadowmap(float freq)
 {
     if(!heightmapCreated) return;
 
-    this->lightmapsFrequency = freq;
-    int sizeFreq = (int)std::ceil(freq);
+    this->lightmapsFrequency = (int)std::ceil(freq);
+    int sizeFreq = this->lightmapsFrequency;
 
     for(int i = 0; i < sizeFreq; i++)
     {
         std::vector<unsigned char> bakedLightmap;
         this->fastGenerateShadowmapParallel(
-            glm::vec3(
-                std::sin(2 * M_PI * (float)i / (sizeFreq - 1)),
-                std::cos(2 * M_PI * (float)i / (sizeFreq - 1)) + 0.7,
-                0.7
-            ), bakedLightmap);
+            calculateLightDir(2.0f * M_PI * (float)i / (sizeFreq - 1)),
+            bakedLightmap
+        );
         std::copy(
             bakedLightmap.begin(), bakedLightmap.end(),
             &this->terrainLightmapsData[

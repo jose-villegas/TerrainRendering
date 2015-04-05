@@ -5,6 +5,31 @@
 const int MAX_POINT_LIGHTS = 2;
 const int MAX_SPOT_LIGHTS = 2;
 
+uniform float currentLightmap = 0.0f;
+
+uniform sampler3D bakedLightmaps;
+uniform vec2 terrainUVScaling = vec2(25, 25);
+uniform vec2 terrainMapSize = vec2(256, 256);
+
+const int MAX_TERRAIN_TEXTURE_RANGES = 4;
+uniform sampler2DArray terrainTextures;
+uniform vec3 terrainRange[MAX_TERRAIN_TEXTURE_RANGES] =
+{
+    // min, max, active > 0.0
+    vec3(0.0, 0.1, -1.0),
+    vec3(0.1, 0.3, -1.0),
+    vec3(0.3, 0.7, -1.0),
+    vec3(0.7, 1.0, -1.0)
+};
+
+vec3 heightSample[MAX_TERRAIN_TEXTURE_RANGES] =
+{
+    vec3(0.1, 0.7, 1.0),
+    vec3(0.7, 0.7, 0.5),
+    vec3(0.3, 0.5, 0.1),
+    vec3(1.0, 0.9, 0.9)
+};
+
 struct Attenuation
 {
     float constant;
@@ -195,38 +220,7 @@ vec3 calculateDirectionalLight(DirectionalLight lightSource, vec3 position,
     return ambient + (specular + diffuse);
 }
 
-// Vertex shader inputs
-in vec2 texCoord;
-in vec3 normal;
-in vec3 position;
-in float height;
-
-layout(location = 0) out vec4 fragColor;
-
-uniform sampler2D terrainShadowmap;
-uniform vec2 terrainUVScaling = vec2(25, 25);
-uniform vec2 terrainMapSize = vec2(256, 256);
-
-const int MAX_TERRAIN_TEXTURE_RANGES = 4;
-uniform sampler2DArray terrainTextures;
-uniform vec3 terrainRange[MAX_TERRAIN_TEXTURE_RANGES] =
-{
-    // min, max, active > 0.0
-    vec3(0.0, 0.1, -1.0),
-    vec3(0.1, 0.3, -1.0),
-    vec3(0.3, 0.7, -1.0),
-    vec3(0.7, 1.0, -1.0)
-};
-
-vec3 heightSample[MAX_TERRAIN_TEXTURE_RANGES] =
-{
-    vec3(0.1, 0.7, 1.0),
-    vec3(0.7, 0.7, 0.5),
-    vec3(0.3, 0.5, 0.1),
-    vec3(1.0, 0.9, 0.9)
-};
-
-vec3 GenerateTerrainColor(float height)
+vec3 generateTerrainColor(float height, vec2 texCoord)
 {
     vec3 terrainColor = vec3(0.0);
     vec3 terrainSurfaceColor = vec3(0.0);
@@ -251,30 +245,41 @@ vec3 GenerateTerrainColor(float height)
     return terrainColor;
 }
 
-float terrainShadow()
+float terrainShadow(vec2 texCoord)
 {
     float sum = 0.0;
     float x, y;
-
     float xOffset = 1.0 / terrainMapSize.x;
     float yOffset = 1.0 / terrainMapSize.y;
 
-    for (y = -1; y <= 1; y += 1.0)
+    for(y = -1; y <= 1; y += 1.0)
     {
-        for (x = -1; x <= 1; x += 1.0)
+        for(x = -1; x <= 1; x += 1.0)
         {
             vec2 offsets = vec2(x * xOffset, y * yOffset);
-            sum += texture(terrainShadowmap, texCoord + offsets).r;
+            sum += texture(
+                       bakedLightmaps,
+                       vec3(texCoord + offsets, currentLightmap)
+                   ).r;
         }
     }
-    return 1.0 - sum / 16.0;  
+
+    return 1.0 - sum / 16.0;
 }
+
+// Vertex shader inputs
+in vec2 texCoord;
+in vec3 normal;
+in vec3 position;
+in float height;
+
+layout(location = 0) out vec4 fragColor;
 
 void main()
 {
     vec3 surfaceNormal = normalize(normal);
-
-    vec3 surfaceColor = GenerateTerrainColor(height) * terrainShadow();
+    vec3 surfaceColor = generateTerrainColor(height,
+                        texCoord) * terrainShadow(texCoord);
     vec3 materialSpecular = material.specular * material.shininessStrength;
     // total light from all light sources
     vec3 totalLight = calculateDirectionalLight(directionalLight, position,

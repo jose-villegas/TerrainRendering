@@ -1,30 +1,78 @@
-2015-04-05 04:07:28:1 <info> GLFW 3.1.1 Win32 WGL VisualC
-2015-04-05 04:07:28:2 <info> OpenGL 3.3.11672 Compatibility Profile Contexts, GLSL 3.30
-2015-04-05 04:07:28:3 <info> Boost 1.57.0
-2015-04-05 04:07:28:4 <info> Ocornut's IMGUI 1.38 WIP
-2015-04-05 04:07:28:5 <info> FreeImage 3.17.0
-2015-04-05 04:07:30:6 <info> Baking Info: Lightmap 1/24 (0%) created
-2015-04-05 04:07:30:7 <info> Baking Info: Lightmap 2/24 (4%) created
-2015-04-05 04:07:30:8 <info> Baking Info: Lightmap 3/24 (8%) created
-2015-04-05 04:07:30:9 <info> Baking Info: Lightmap 4/24 (13%) created
-2015-04-05 04:07:30:10 <info> Baking Info: Lightmap 5/24 (17%) created
-2015-04-05 04:07:30:11 <info> Baking Info: Lightmap 6/24 (21%) created
-2015-04-05 04:07:30:12 <info> Baking Info: Lightmap 7/24 (26%) created
-2015-04-05 04:07:30:13 <info> Baking Info: Lightmap 8/24 (30%) created
-2015-04-05 04:07:30:14 <info> Baking Info: Lightmap 9/24 (34%) created
-2015-04-05 04:07:30:15 <info> Baking Info: Lightmap 10/24 (39%) created
-2015-04-05 04:07:31:16 <info> Baking Info: Lightmap 11/24 (43%) created
-2015-04-05 04:07:31:17 <info> Baking Info: Lightmap 12/24 (47%) created
-2015-04-05 04:07:31:18 <info> Baking Info: Lightmap 13/24 (52%) created
-2015-04-05 04:07:31:19 <info> Baking Info: Lightmap 14/24 (56%) created
-2015-04-05 04:07:31:20 <info> Baking Info: Lightmap 15/24 (60%) created
-2015-04-05 04:07:31:21 <info> Baking Info: Lightmap 16/24 (65%) created
-2015-04-05 04:07:31:22 <info> Baking Info: Lightmap 17/24 (69%) created
-2015-04-05 04:07:31:23 <info> Baking Info: Lightmap 18/24 (73%) created
-2015-04-05 04:07:31:24 <info> Baking Info: Lightmap 19/24 (78%) created
-2015-04-05 04:07:31:25 <info> Baking Info: Lightmap 20/24 (82%) created
-2015-04-05 04:07:31:26 <info> Baking Info: Lightmap 21/24 (86%) created
-2015-04-05 04:07:31:27 <info> Baking Info: Lightmap 22/24 (91%) created
-2015-04-05 04:07:31:28 <info> Baking Info: Lightmap 23/24 (95%) created
-2015-04-05 04:07:31:29 <info> Baking Info: Lightmap 24/24 (100%) created
-2015-04-05 04:07:31:30 <info> Baking Done, 24 lightmaps created, 1/h
+2015-04-05 14:07:15:1 <info> GLFW 3.1.1 Win32 WGL VisualC
+2015-04-05 14:07:15:2 <info> OpenGL 3.3.11672 Compatibility Profile Contexts, GLSL 3.30
+2015-04-05 14:07:15:3 <info> Boost 1.57.0
+2015-04-05 14:07:15:4 <info> Ocornut's IMGUI 1.38 WIP
+2015-04-05 14:07:15:5 <info> FreeImage 3.17.0
+2015-04-05 14:07:17:6 <info> Baking Info: Lightmap 1/72 (0%) created
+2015-04-05 14:07:17:7 <info> Baking Info: Lightmap 2/72 (1%) created
+2015-04-05 14:07:17:8 <info> Baking Info: Lightmap 3/72 (2%) created
+2015-04-05 14:07:17:9 <info> Baking Info: Lightmap 4/72 (4%) created
+2015-04-05 14:07:17:10 <info> Baking Info: Lightmap 5/72 (5%) created
+2015-04-05 14:07:17:11 <info> Baking Info: Lightmap 6/72 (7%) created
+2015-04-05 14:07:17:12 <info> Baking Info: Lightmap 7/72 (8%) created
+2015-04-05 14:07:17:13 <info> Baking Info: Lightmap 8/72 (9%) created
+2015-04-05 14:07:17:14 <info> Baking Info: Lightmap 9/72 (11%) created
+2015-04-05 14:07:17:15 <info> Baking Info: Lightmap 10/72 (12%) created
+2015-04-05 14:07:17:16 <info> Baking Info: Lightmap 11/72 (14%) created
+2015-04-05 14:07:17:17 <info> Baking Info: Lightmap 12/72 (15%) created
+2015-04-05 14:07:17:18 <info> Baking Info: Lightmap 13/72 (16%) created
+2015-04-05 14:07:17:19 <info> Baking Info: Lightmap 14/72 (18%) created
+2015-04-05 14:07:17:20 <info> Baking Info: Lightmap 15/72 (19%) created
+2015-04-05 14:07:17:21 <info> Baking Info: Lightmap 16/72 (21%) created
+2015-04-05 14:07:17:22 <info> Baking Info: Lightmap 17/72 (22%) created
+2015-04-05 14:07:17:23 <info> Baking Info: Lightmap 18/72 (23%) created
+2015-04-05 14:07:17:24 <info> Baking Info: Lightmap 19/72 (25%) created
+2015-04-05 14:07:17:25 <info> Baking Info: Lightmap 20/72 (26%) created
+2015-04-05 14:07:18:26 <info> Baking Info: Lightmap 21/72 (28%) created
+2015-04-05 14:07:18:27 <info> Baking Info: Lightmap 22/72 (29%) created
+2015-04-05 14:07:18:28 <info> Baking Info: Lightmap 23/72 (30%) created
+2015-04-05 14:07:18:29 <info> Baking Info: Lightmap 24/72 (32%) created
+2015-04-05 14:07:18:30 <info> Baking Info: Lightmap 25/72 (33%) created
+2015-04-05 14:07:18:31 <info> Baking Info: Lightmap 26/72 (35%) created
+2015-04-05 14:07:18:32 <info> Baking Info: Lightmap 27/72 (36%) created
+2015-04-05 14:07:18:33 <info> Baking Info: Lightmap 28/72 (38%) created
+2015-04-05 14:07:18:34 <info> Baking Info: Lightmap 29/72 (39%) created
+2015-04-05 14:07:18:35 <info> Baking Info: Lightmap 30/72 (40%) created
+2015-04-05 14:07:18:36 <info> Baking Info: Lightmap 31/72 (42%) created
+2015-04-05 14:07:18:37 <info> Baking Info: Lightmap 32/72 (43%) created
+2015-04-05 14:07:18:38 <info> Baking Info: Lightmap 33/72 (45%) created
+2015-04-05 14:07:18:39 <info> Baking Info: Lightmap 34/72 (46%) created
+2015-04-05 14:07:18:40 <info> Baking Info: Lightmap 35/72 (47%) created
+2015-04-05 14:07:18:41 <info> Baking Info: Lightmap 36/72 (49%) created
+2015-04-05 14:07:18:42 <info> Baking Info: Lightmap 37/72 (50%) created
+2015-04-05 14:07:18:43 <info> Baking Info: Lightmap 38/72 (52%) created
+2015-04-05 14:07:19:44 <info> Baking Info: Lightmap 39/72 (53%) created
+2015-04-05 14:07:19:45 <info> Baking Info: Lightmap 40/72 (54%) created
+2015-04-05 14:07:19:46 <info> Baking Info: Lightmap 41/72 (56%) created
+2015-04-05 14:07:19:47 <info> Baking Info: Lightmap 42/72 (57%) created
+2015-04-05 14:07:19:48 <info> Baking Info: Lightmap 43/72 (59%) created
+2015-04-05 14:07:19:49 <info> Baking Info: Lightmap 44/72 (60%) created
+2015-04-05 14:07:19:50 <info> Baking Info: Lightmap 45/72 (61%) created
+2015-04-05 14:07:19:51 <info> Baking Info: Lightmap 46/72 (63%) created
+2015-04-05 14:07:19:52 <info> Baking Info: Lightmap 47/72 (64%) created
+2015-04-05 14:07:19:53 <info> Baking Info: Lightmap 48/72 (66%) created
+2015-04-05 14:07:19:54 <info> Baking Info: Lightmap 49/72 (67%) created
+2015-04-05 14:07:19:55 <info> Baking Info: Lightmap 50/72 (69%) created
+2015-04-05 14:07:19:56 <info> Baking Info: Lightmap 51/72 (70%) created
+2015-04-05 14:07:19:57 <info> Baking Info: Lightmap 52/72 (71%) created
+2015-04-05 14:07:19:58 <info> Baking Info: Lightmap 53/72 (73%) created
+2015-04-05 14:07:19:59 <info> Baking Info: Lightmap 54/72 (74%) created
+2015-04-05 14:07:19:60 <info> Baking Info: Lightmap 55/72 (76%) created
+2015-04-05 14:07:19:61 <info> Baking Info: Lightmap 56/72 (77%) created
+2015-04-05 14:07:19:62 <info> Baking Info: Lightmap 57/72 (78%) created
+2015-04-05 14:07:19:63 <info> Baking Info: Lightmap 58/72 (80%) created
+2015-04-05 14:07:19:64 <info> Baking Info: Lightmap 59/72 (81%) created
+2015-04-05 14:07:19:65 <info> Baking Info: Lightmap 60/72 (83%) created
+2015-04-05 14:07:19:66 <info> Baking Info: Lightmap 61/72 (84%) created
+2015-04-05 14:07:19:67 <info> Baking Info: Lightmap 62/72 (85%) created
+2015-04-05 14:07:20:68 <info> Baking Info: Lightmap 63/72 (87%) created
+2015-04-05 14:07:20:69 <info> Baking Info: Lightmap 64/72 (88%) created
+2015-04-05 14:07:20:70 <info> Baking Info: Lightmap 65/72 (90%) created
+2015-04-05 14:07:20:71 <info> Baking Info: Lightmap 66/72 (91%) created
+2015-04-05 14:07:20:72 <info> Baking Info: Lightmap 67/72 (92%) created
+2015-04-05 14:07:20:73 <info> Baking Info: Lightmap 68/72 (94%) created
+2015-04-05 14:07:20:74 <info> Baking Info: Lightmap 69/72 (95%) created
+2015-04-05 14:07:20:75 <info> Baking Info: Lightmap 70/72 (97%) created
+2015-04-05 14:07:20:76 <info> Baking Info: Lightmap 71/72 (98%) created
+2015-04-05 14:07:20:77 <info> Baking Info: Lightmap 72/72 (100%) created
+2015-04-05 14:07:20:78 <info> Baking Done, 72 lightmaps created, 3 per hour

@@ -12,6 +12,8 @@ class Terrain
         // freq represents the number of sampler per day
         // for example 24 == 1 shadowmap per hour
         void bakeTimeOfTheDayShadowmap(float freq);
+        glm::vec3 calculateLightDir(float time);
+        void calculateLightDir(float time, glm::vec3 &outDir, glm::vec3 &outColor);
     private:
         bool heightmapCreated;
         bool meshCreated;
@@ -30,7 +32,7 @@ class Terrain
         int meshSize;
         float maxHeight;
         float minHeight;
-        float lightmapsFrequency;
+        int lightmapsFrequency;
         // utilities
         VertexArray terrainMesh;
         FragmentShader fragmentShader;
