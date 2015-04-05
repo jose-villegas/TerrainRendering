@@ -30,12 +30,14 @@
 #include <vector>
 #include <algorithm>
 #include <unordered_map>
+#include <thread>
 #include <math.h>
 // glm math library headers
 #include <glm/glm.hpp>
 #include <glm/common.hpp>
 #include <glm/gtx/matrix_operation.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/norm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include "glm/detail/type_vec3.hpp"
 // boost c++ general utils headers

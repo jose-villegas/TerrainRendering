@@ -6,6 +6,13 @@ using namespace oglplus;
 class Terrain
 {
     private:
+        unsigned char * terrainLightmapsData;
+        bool bakingDone = false;
+        std::thread bakingThread;
+        // freq represents the number of sampler per day
+        // for example 24 == 1 shadowmap per hour
+        void bakeTimeOfTheDayShadowmap(float freq);
+    private:
         bool heightmapCreated;
         bool meshCreated;
         float terrainMaxHeight;
@@ -23,6 +30,7 @@ class Terrain
         int meshSize;
         float maxHeight;
         float minHeight;
+        float lightmapsFrequency;
         // utilities
         VertexArray terrainMesh;
         FragmentShader fragmentShader;
@@ -31,6 +39,8 @@ class Terrain
         Context gl;
         // terrain shadows, generated with heightmap info
         Texture terrainShadowmap;
+        // time of the day 3d texture
+        Texture terrainTOTDLightmap;
         // heightmap generator
         Heightmap heightmap;
         // multitexture handling class
@@ -40,7 +50,16 @@ class Terrain
         void initialize();
         void display();
         void bindBuffers();
-        void generateShadowmap(glm::vec3 lightPos);
+        // lightmap as output
+        void fastGenerateShadowmapParallel(
+            glm::vec3 lightDir,
+            std::vector<unsigned char> &lightmap
+        );
+        // writes lightmap to texture, clears vector data
+        void fastGenerateShadowmapParallel(
+            glm::vec3 lightDir
+        );
+
         // creates a terrain of 2^sizeExponent + 1 size
         void createTerrain(const int heightmapSize);
         void createMesh(const int meshResExponent);
@@ -53,6 +72,7 @@ class Terrain
         void setTextureRange(const int index, const float start, const float end);
         void loadTexture(const int index, const std::string &filepath);
         GLuint getTextureId(int index);
+        GLuint getLightmapId() { return oglplus::GetName(this->terrainShadowmap); };
 
         Terrain();
         ~Terrain();

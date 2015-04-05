@@ -62,7 +62,8 @@ void AppInterface::draw()
                 );
             }
 
-            if(ImGui::SliderFloat("Terrain Scale", &terrainScale, 1.0f, 300.0f))
+            if(ImGui::SliderFloat("Terrain Scale",
+                                  &terrainScale, 1.0f, 300.0f, "%.5f"))
             {
                 TransformationMatrices::Model(
                     glm::scale(glm::mat4(), glm::vec3(terrainScale, maxHeight, terrainScale))
@@ -85,7 +86,6 @@ void AppInterface::draw()
                 gl.PolygonMode(Face::FrontAndBack, PolygonMode::Line);
             }
 
-            stackedSize.x += ImGui::GetWindowSize().x;
             stackedSize.y += ImGui::GetWindowSize().y;
             ImGui::End();
         }
@@ -180,26 +180,33 @@ void AppInterface::draw()
             stackedSize.y += ImGui::GetWindowSize().y;
             ImGui::End();
         }
-
         // shadow map
-        if(false)
         {
-            ImGui::SetNextWindowPos(ImVec2(stackedSize.x + 3, 3));
-            ImGui::Begin("Shadow Map", nullptr,
-                         ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings |
-                         ImGuiWindowFlags_NoMove);
-            //ImGui::Image(
-            //    (void *)(intptr_t)oglplus::GetName(
-            //    App::Instance()->getTerrain().TerrainShadowmap()
-            //    ),
-            //    ImVec2(328, 328),
-            //    ImVec2(0.0, 0.0), ImVec2(1.0, 1.0),
-            //    ImColor(255, 255, 255, 255),
-            //    ImColor(255, 255, 255, 128)
-            //);
+            ImGui::SetNextWindowPos(ImVec2(stackedSize.x + 6, 3));
+            ImGui::SetNextWindowCollapsed(true, ImGuiSetCond_Once);
+
+            if(ImGui::Begin("Shadow Map", nullptr,
+                            ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings |
+                            ImGuiWindowFlags_NoMove))
+            {
+                App::Instance()->getTerrain().fastGenerateShadowmapParallel(
+                    glm::vec3(
+                        std::sin(glfwGetTime() * 0.1),
+                        std::cos(glfwGetTime() * 0.1) + 0.7,
+                        0.7
+                    )
+                );
+                ImGui::Image(
+                    (void *)(intptr_t)App::Instance()->getTerrain().getLightmapId(),
+                    ImVec2(200, 200),
+                    ImVec2(0.0, 0.0), ImVec2(1.0, 1.0),
+                    ImColor(255, 255, 255, 255),
+                    ImColor(255, 255, 255, 128)
+                );
+            }
+
             ImGui::End();
         }
-
         // performance window
         {
             ImGui::SetNextWindowSize(ImVec2(150, 50));
