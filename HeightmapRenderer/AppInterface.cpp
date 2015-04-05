@@ -31,7 +31,9 @@ void AppInterface::draw()
 
             if(ImGui::Button("Generate Terrain"))
             {
-                App::Instance()->getTerrain().createTerrain(std::pow(2, heightmapResolution));
+                App::Instance()->getTerrain().createTerrain(
+                    (int)std::pow(2, heightmapResolution)
+                );
                 App::Instance()->getTerrain().createMesh(meshResolution);
             }
 
@@ -121,15 +123,14 @@ void AppInterface::draw()
                 {
                     ranges[j] = clamp(
                                     ranges[j],
-                                    j == 0 ? 0.0 : ranges[j - 1],
-                                    j == 7 ?  1.0 : ranges[j + 1]
+                                    j == 0 ? 0.0f : ranges[j - 1],
+                                    j == 7 ?  1.0f : ranges[j + 1]
                                 );
                 }
 
                 // set values
                 App::Instance()->getTerrain()
-                .TerrainTextures()
-                .SetTextureRange(i, ranges[i * 2], ranges[i * 2 + 1]);
+                .setTextureRange(i, ranges[i * 2], ranges[i * 2 + 1]);
                 ImGui::PopID();
             }
 
@@ -144,12 +145,9 @@ void AppInterface::draw()
                     fileDialog->ShowDialog();
                     // load texture from filename
                     App::Instance()->getTerrain()
-                    .TerrainTextures()
-                    .loadTexture(fileDialog->FileName, i);
+                    .loadTexture(i, fileDialog->FileName);
                     // assign texture to texid interfaces
-                    texId[i] = (void *)(intptr_t)App::Instance()->getTerrain()
-                               .TerrainTextures()
-                               .UITextureId(i);
+                    texId[i] = (void *)(intptr_t)App::Instance()->getTerrain().getTextureId(i);
                 }
 
                 if(ImGui::IsItemHovered())
@@ -165,37 +163,43 @@ void AppInterface::draw()
                     ImGui::EndTooltip();
                 }
 
-                i < 4 ? ImGui::SameLine() : 0;
+                i < 3 ? ImGui::SameLine() : 0;
                 ImGui::PopID();
+            }
+
+            ImGui::Separator();
+            ImGui::Text("Texture Repeat");
+
+            if(ImGui::InputFloat2("##t", textureRepeat))
+            {
+                App::Instance()->getTerrain().setTextureRepeatFrequency(
+                    glm::vec2(textureRepeat[0], textureRepeat[1])
+                );
             }
 
             stackedSize.y += ImGui::GetWindowSize().y;
             ImGui::End();
         }
+
         // shadow map
+        if(false)
         {
-            App::Instance()->getTerrain().generateShadowmap(
-                glm::vec3(
-                    std::sin(glfwGetTime()),
-                    std::cos(glfwGetTime()),
-                    0.7f
-                ) * 15.0f
-            );
-            ImGui::SetNextWindowPos(ImVec2(3, stackedSize.y + 6));
+            ImGui::SetNextWindowPos(ImVec2(stackedSize.x + 3, 3));
             ImGui::Begin("Shadow Map", nullptr,
                          ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings |
                          ImGuiWindowFlags_NoMove);
-            ImGui::Image(
-                (void *)(intptr_t)oglplus::GetName(
-                    App::Instance()->getTerrain().TerrainShadowmap()
-                ),
-                ImVec2(328, 328),
-                ImVec2(0.0, 0.0), ImVec2(1.0, 1.0),
-                ImColor(255, 255, 255, 255),
-                ImColor(255, 255, 255, 128)
-            );
+            //ImGui::Image(
+            //    (void *)(intptr_t)oglplus::GetName(
+            //    App::Instance()->getTerrain().TerrainShadowmap()
+            //    ),
+            //    ImVec2(328, 328),
+            //    ImVec2(0.0, 0.0), ImVec2(1.0, 1.0),
+            //    ImColor(255, 255, 255, 255),
+            //    ImColor(255, 255, 255, 128)
+            //);
             ImGui::End();
         }
+
         // performance window
         {
             ImGui::SetNextWindowSize(ImVec2(150, 50));
@@ -233,6 +237,7 @@ AppInterface::AppInterface()
     this->terrainScale = 15.f;
     this->meshResolution = 8;
     this->heightmapResolution = 8;
+    this->textureRepeat[0] = this->textureRepeat[1] = 25.0f;
 
     for(int i = 0; i < 4; i++)
     {

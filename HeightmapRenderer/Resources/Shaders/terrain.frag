@@ -203,6 +203,9 @@ in float height;
 
 layout(location = 0) out vec4 fragColor;
 
+uniform sampler2D terrainShadowmap;
+uniform vec2 terrainUVScaling; 
+
 const int MAX_TERRAIN_TEXTURE_RANGES = 4;
 uniform sampler2DArray terrainTextures;
 uniform vec3 terrainRange[MAX_TERRAIN_TEXTURE_RANGES] =
@@ -230,6 +233,7 @@ vec3 GenerateTerrainColor(float height)
     float regionMax = 0.0;
     float regionRange = 0.0;
     float regionWeight = 0.0;
+    vec2 terrainUV = texCoord * terrainUVScaling;
 
     for(int i = 0; i < MAX_TERRAIN_TEXTURE_RANGES; i++)
     {
@@ -237,8 +241,9 @@ vec3 GenerateTerrainColor(float height)
         regionMax = terrainRange[i].y;
         regionRange = regionMax - regionMin;
         regionWeight = max(0.0, (regionRange - abs(height - regionMax)) / regionRange);
-        terrainSurfaceColor = terrainRange[i].z > 0.0 ?
-                              texture(terrainTextures, vec3(texCoord, i)).rgb : heightSample[i];
+        terrainSurfaceColor = terrainRange[i].z > 0.0
+                              ? texture(terrainTextures, vec3(terrainUV, i)).rgb
+                              : heightSample[i];
         terrainColor += regionWeight * terrainSurfaceColor;
     }
 
@@ -248,8 +253,7 @@ vec3 GenerateTerrainColor(float height)
 void main()
 {
     vec3 surfaceNormal = normalize(normal);
-    vec3 surfaceColor = vec3(0.0, 0.0, 0.0);
-    surfaceColor = GenerateTerrainColor(height);
+    vec3 surfaceColor = GenerateTerrainColor(height);
     vec3 materialSpecular = material.specular * material.shininessStrength;
     // total light from all light sources
     vec3 totalLight = calculateDirectionalLight(directionalLight, position,

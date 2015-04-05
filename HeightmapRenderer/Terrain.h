@@ -44,11 +44,16 @@ class Terrain
         // creates a terrain of 2^sizeExponent + 1 size
         void createTerrain(const int heightmapSize);
         void createMesh(const int meshResExponent);
-        Heightmap &Heightmap() { return heightmap; }
-        TerrainMultiTexture &TerrainTextures() { return terrainTextures; }
 
-        Terrain(Terrain *rhs) { rhs = this; };
-        Texture &TerrainShadowmap() { return terrainShadowmap; }
+        // important getters
+        Heightmap &Heightmap() { return heightmap; }
+        Program &Program() { return program; }
+
+        void setTextureRepeatFrequency(const glm::vec2 &value);
+        void setTextureRange(const int index, const float start, const float end);
+        void loadTexture(const int index, const std::string &filepath);
+        GLuint getTextureId(int index);
+
         Terrain();
         ~Terrain();
 };

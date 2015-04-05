@@ -177,9 +177,9 @@ void App::Start()
         TransformationMatrices::View(
             glm::lookAt(
                 glm::vec3(
-                    std::sin(glfwGetTime() * 0.25) * 5.0,
+                    std::sin(glfwGetTime() * 0) * 5.0,
                     3.0,
-                    std::cos(glfwGetTime() * 0.25) * 5.0
+                    std::cos(glfwGetTime() * 0) * 5.0
                 ),
                 glm::vec3(0.0, 0.0, 0.0),
                 glm::vec3(0, 1, 0)

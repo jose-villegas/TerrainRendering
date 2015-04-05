@@ -18,10 +18,22 @@ void Terrain::display()
     // set shader uniforms
     {
         this->terrainTextures.SetUniforms(program);
+        //generateShadowmap(
+        //    glm::vec3(
+        //        std::sin(glfwGetTime() * 0.1),
+        //        std::cos(glfwGetTime() * 0.1),
+        //        0.7f
+        //    ) * 15.f
+        //);
         // camera
         glm::vec4 lightDirectionCameraSpace =
             TransformationMatrices::View()
-            * glm::vec4(0.5f, 0.7f, 0.7f, 0.0f);
+            * glm::vec4(
+                std::sin(glfwGetTime() * 0.1),
+                std::cos(glfwGetTime() * 0.1) + 0.95f,
+                0.7f,
+                0.0f
+            );
         // lighting
         Uniform<glm::vec3>(program, "directionalLight.direction").Set(
             glm::vec3(lightDirectionCameraSpace)
@@ -61,6 +73,7 @@ void Terrain::bindBuffers()
 
 void Terrain::generateShadowmap(glm::vec3 lightPos)
 {
+    using namespace  boost::algorithm;
     using namespace noise::utils;
 
     // can't create shadowmap without height info
@@ -75,7 +88,13 @@ void Terrain::generateShadowmap(glm::vec3 lightPos)
         for(int x = 0; x < mapSize; x++)
         {
             // height map positions
-            glm::vec3 currentPos = glm::vec3((float)x, heightmap.getValue(x, z), (float)z);
+            glm::vec3 currentPos = glm::vec3(
+                                       (float)x,
+                                       clamp(
+                                           (heightmap.getValue(x, z) + 1.0f) / 2.0f, 0.0f, 1.0f
+                                       ),
+                                       (float)z
+                                   );
             // calculate ray from light direction
             glm::vec3 lightDir = glm::normalize(lightPos - currentPos);
             shadowMap[z * mapSize * 3 + x * 3] = 255;
@@ -95,7 +114,9 @@ void Terrain::generateShadowmap(glm::vec3 lightPos)
                 int lerpZ = (int)std::round(currentPos.z);
 
                 // ray hit
-                if(currentPos.y <= heightmap.getValue(lerpX, lerpZ))
+                if(currentPos.y <= clamp(
+                       (heightmap.getValue(lerpX, lerpZ) + 1.0f) / 2.0f, 0.0f, 1.0f
+                   ))
                 {
                     shadowMap[z * mapSize * 3 + x * 3] = 0;
                     shadowMap[z * mapSize * 3 + x * 3 + 1] = 0;
@@ -154,8 +175,8 @@ void Terrain::createMesh(const int meshResExponent)
     texCoords.resize(meshResolution * meshResolution);
     indices.resize((meshResolution - 1) * meshResolution * 2 + meshResolution);
     // load mesh positions and heights as vertices
-    float textureU = (float)meshResolution * 0.1f;
-    float textureV = (float)meshResolution * 0.1f;
+    float textureU = (float)meshResolution * 0.1;
+    float textureV = (float)meshResolution * 0.1;
     // index buffer restart triangle strip
     int restartIndex = meshResolution * meshResolution;
     // parallel modification
@@ -184,8 +205,8 @@ void Terrain::createMesh(const int meshResExponent)
             // also create the appropiate texcoord
             texCoords[i * meshResolution + j] =
                 glm::vec2(
-                    textureU * colScale,
-                    textureV * rowScale
+                    colScale,
+                    rowScale
                 );
 
             // create triangle strip indices
@@ -299,6 +320,29 @@ void Terrain::createMesh(const int meshResExponent)
     generateShadowmap(glm::vec3(0.5f, 0.7f, 0.7f) * 15.0f);
 }
 
+void Terrain::setTextureRepeatFrequency(const glm::vec2 &value)
+{
+    program.Use();
+    Uniform<glm::vec2>(program, "terrainUVScaling")
+    .Set(value);
+}
+
+void Terrain::setTextureRange(const int index, const float start,
+                              const float end)
+{
+    this->terrainTextures.SetTextureRange(index, start, end);
+}
+
+void Terrain::loadTexture(const int index, const std::string &filepath)
+{
+    this->terrainTextures.loadTexture(filepath, index);
+}
+
+GLuint Terrain::getTextureId(int index)
+{
+    return this->terrainTextures.UITextureId(index);
+}
+
 Terrain::Terrain() : terrainMaxHeight(1.0f), heightmapCreated(false),
     meshCreated(false)
 {
@@ -351,6 +395,9 @@ void Terrain::initialize()
     );
     Uniform<GLfloat>(program, "maxHeight").Set(
         this->terrainMaxHeight
+    );
+    Uniform<glm::vec2>(program, "terrainUVScaling").Set(
+        glm::vec2(25, 25)
     );
     TransformationMatrices::Model(
         glm::scale(glm::mat4(), glm::vec3(15, terrainMaxHeight, 15))

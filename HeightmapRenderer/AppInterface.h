@@ -11,6 +11,7 @@ class AppInterface
         float terrainScale;
         float ranges[8];
         oglplus::Context gl;
+        float textureRepeat[2];
     public:
         void initialize(GLFWwindow * window);
         void draw();
