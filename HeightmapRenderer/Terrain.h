@@ -11,7 +11,7 @@ class Terrain
     private:
         unsigned char * terrainLightmapsData;
         bool bakingDone = false;
-        bool enableTimeOfTheDayColorGrading = false;
+        bool enableTimeOfTheDayColorGrading = true;
         float timeScale;
         std::thread bakingThread;
         // freq represents the number of sampler per day

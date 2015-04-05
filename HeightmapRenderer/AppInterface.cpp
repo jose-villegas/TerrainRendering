@@ -259,6 +259,7 @@ AppInterface::AppInterface()
     this->heightmapResolution = 8;
     this->textureRepeat[0] = this->textureRepeat[1] = 25.0f;
     this->timeScale = 0.1f;
+    this->colorGrading = true;
 
     for(int i = 0; i < 4; i++)
     {

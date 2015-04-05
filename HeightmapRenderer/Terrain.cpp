@@ -13,6 +13,12 @@ glm::vec3 Terrain::calculateLightDir(float time)
     float dirX = std::sin(time);
     float dirY = std::cos(time) + 0.7f;
     float dirZ = 0.7;
+
+    if(dirY < 0.0f)
+    {
+        dirY -= 1.0;
+    }
+
     return glm::vec3(dirX, std::abs(dirY), dirZ);
 }
 
@@ -32,17 +38,18 @@ void Terrain::calculateLightDir(float time, glm::vec3 &outDir,
             outColor =
                 lerp(
                     glm::vec3(1.0f, 1.00f, 0.86f),
-                    glm::vec3(1.0f, 0.23f, 0.23f),
+                    glm::vec3(0.95f, 0.54f, 0.21f),
                     (dirY - 0.3f) / 1.4
                 );
         }
 
+        // night time
         if(dirY < 0.3 && dirY > 0.0f)
         {
             outColor =
                 lerp(
-                    glm::vec3(1.0f, 0.23f, 0.23f),
-                    glm::vec3(0.01, 0.01, 0.01),
+                    glm::vec3(0.95f, 0.54f, 0.21f),
+                    glm::vec3(0.1, 0.1, 0.1),
                     dirY * (1.0f / 0.3f)
                 );
         }
@@ -50,9 +57,14 @@ void Terrain::calculateLightDir(float time, glm::vec3 &outDir,
         // night moonlight
         if(dirY <= 0.0f)
         {
-            float moonFactor = (1.0 / 0.3) * std::abs(dirY);
-            outColor = glm::vec3(0.07, 0.23, 0.63) * moonFactor;
+            float moonFactor = (1.0 / 0.3) * std::abs(dirY) + 0.1;
+            outColor = glm::vec3(0.18, 0.21, 0.25) * moonFactor;
         }
+    }
+
+    if(dirY < 0.0f)
+    {
+        dirY -= 1.0;
     }
 
     outDir = glm::vec3(dirX, std::abs(dirY), dirZ);
