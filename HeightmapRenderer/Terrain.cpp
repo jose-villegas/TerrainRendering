@@ -3,14 +3,9 @@
 #include "TransformationMatrices.h"
 using namespace boost::algorithm;
 
-static glm::vec3 lerp(const glm::vec3& A, const glm::vec3& B, float t)
-{
-    return A * t + B * (1.f - t);
-}
-
 glm::vec3 Terrain::calculateLightDir(float time)
 {
-    float dirX = std::sin(time);
+    float dirX = std::sin(time) * 2.0;
     float dirY = std::cos(time) + 0.7f;
     float dirZ = 0.7;
 
@@ -26,7 +21,7 @@ void Terrain::calculateLightDir(float time, glm::vec3 &outDir,
                                 glm::vec3 &outColor)
 {
     outColor = glm::vec3(1.0f, 1.0f, 0.86f);
-    float dirX = std::sin(time);
+    float dirX = std::sin(time) * 2.0;
     float dirY = std::cos(time) + 0.7f;
     float dirZ = 0.7f;
 
@@ -36,10 +31,10 @@ void Terrain::calculateLightDir(float time, glm::vec3 &outDir,
         if(dirY >= 0.3f)
         {
             outColor =
-                lerp(
-                    glm::vec3(1.0f, 1.00f, 0.86f),
+                glm::lerp(
                     glm::vec3(0.95f, 0.54f, 0.21f),
-                    (dirY - 0.3f) / 1.4
+                    glm::vec3(1.0f, 1.00f, 0.86f),
+                    (dirY - 0.3f) / 1.4f
                 );
         }
 
@@ -47,9 +42,9 @@ void Terrain::calculateLightDir(float time, glm::vec3 &outDir,
         if(dirY < 0.3 && dirY > 0.0f)
         {
             outColor =
-                lerp(
-                    glm::vec3(0.95f, 0.54f, 0.21f),
+                glm::lerp(
                     glm::vec3(0.1, 0.1, 0.1),
+                    glm::vec3(0.95f, 0.54f, 0.21f),
                     dirY * (1.0f / 0.3f)
                 );
         }
@@ -110,7 +105,9 @@ void Terrain::display()
         );
         // shader time handler
         Uniform<GLfloat>(program, "currentLightmap").Set(
-            glfwGetTime() * ((timeScale * (3 * M_PI + 2)) / lightmapsFrequency)
+            glfwGetTime() *
+            ((timeScale * (((float)lightmapsFrequency / 24.0f) * M_PI + 2)) /
+             lightmapsFrequency)
         );
     }
     // draw mesh
@@ -554,6 +551,11 @@ void Terrain::createMesh(const int meshResExponent)
         gl.PrimitiveRestartIndex(restartIndex);
     }
     meshCreated = true;
+    // clear data once uploaded to GPU
+    this->indices.clear();
+    this->vertices.clear();
+    this->texCoords.clear();
+    this->normals.clear();
 }
 
 void Terrain::setTextureRepeatFrequency(const glm::vec2 &value)

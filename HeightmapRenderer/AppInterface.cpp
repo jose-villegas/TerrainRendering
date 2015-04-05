@@ -207,7 +207,7 @@ void AppInterface::draw()
                             ImGuiWindowFlags_NoMove))
             {
                 App::Instance()->getTerrain().fastGenerateShadowmapParallel(
-                    App::Instance()->getTerrain().calculateLightDir(glfwGetTime() * timeScale), 64
+                    App::Instance()->getTerrain().calculateLightDir(glfwGetTime() * timeScale), 128
                 );
                 ImGui::Image(
                     (void *)(intptr_t)App::Instance()->getTerrain().getLightmapId(),

@@ -39,7 +39,9 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/norm.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include "glm/detail/type_vec3.hpp"
+#include <glm/detail/type_vec3.hpp>
+#include <glm/gtx/common.hpp>
+#include <glm/gtx/compatibility.hpp>
 // boost c++ general utils headers
 #include <boost/version.hpp>
 #include <boost/log/core.hpp>
