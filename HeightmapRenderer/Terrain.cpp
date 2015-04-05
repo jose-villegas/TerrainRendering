@@ -24,32 +24,35 @@ void Terrain::calculateLightDir(float time, glm::vec3 &outDir,
     float dirY = std::cos(time) + 0.7f;
     float dirZ = 0.7f;
 
-    // day light gradually turn to dawn
-    if(dirY >= 0.3f)
+    if(enableTimeOfTheDayColorGrading)
     {
-        outColor =
-            lerp(
-                glm::vec3(1.0f, 1.00f, 0.86f),
-                glm::vec3(1.0f, 0.23f, 0.23f),
-                (dirY - 0.3f) / 1.4
-            );
-    }
+        // day light gradually turn to dawn
+        if(dirY >= 0.3f)
+        {
+            outColor =
+                lerp(
+                    glm::vec3(1.0f, 1.00f, 0.86f),
+                    glm::vec3(1.0f, 0.23f, 0.23f),
+                    (dirY - 0.3f) / 1.4
+                );
+        }
 
-    if(dirY < 0.3 && dirY > 0.0f)
-    {
-        outColor =
-            lerp(
-                glm::vec3(1.0f, 0.23f, 0.23f),
-                glm::vec3(0.01, 0.01, 0.01),
-                dirY * (1.0f / 0.3f)
-            );
-    }
+        if(dirY < 0.3 && dirY > 0.0f)
+        {
+            outColor =
+                lerp(
+                    glm::vec3(1.0f, 0.23f, 0.23f),
+                    glm::vec3(0.01, 0.01, 0.01),
+                    dirY * (1.0f / 0.3f)
+                );
+        }
 
-    // night moonlight
-    if(dirY <= 0.0f)
-    {
-        float moonFactor = (1.0 / 0.3) * std::abs(dirY);
-        outColor = glm::vec3(0.07, 0.23, 0.63) * moonFactor;
+        // night moonlight
+        if(dirY <= 0.0f)
+        {
+            float moonFactor = (1.0 / 0.3) * std::abs(dirY);
+            outColor = glm::vec3(0.07, 0.23, 0.63) * moonFactor;
+        }
     }
 
     outDir = glm::vec3(dirX, std::abs(dirY), dirZ);
@@ -73,7 +76,7 @@ void Terrain::display()
         this->terrainTextures.SetUniforms(program);
         static glm::vec3 lightColor, lightDir;
         // lighting calculations
-        calculateLightDir(glfwGetTime() * 0.1, lightDir, lightColor);
+        calculateLightDir(glfwGetTime() * timeScale, lightDir, lightColor);
         glm::vec4 lightDirectionCameraSpace = TransformationMatrices::View()
                                               * glm::vec4(lightDir, 0.0f);
         // lighting
@@ -95,7 +98,7 @@ void Terrain::display()
         );
         // shader time handler
         Uniform<GLfloat>(program, "currentLightmap").Set(
-            glfwGetTime() / this->lightmapsFrequency
+            glfwGetTime() * ((timeScale * (3 * M_PI + 2)) / lightmapsFrequency)
         );
     }
     // draw mesh
@@ -146,14 +149,40 @@ void Terrain::fastGenerateShadowmapParallel(
     std::vector<unsigned char> &lightmap
 )
 {
+    fastGenerateShadowmapParallel(lightDir, lightmap, terrainResolution);
+}
+
+void Terrain::fastGenerateShadowmapParallel(glm::vec3 lightDir,
+        unsigned int lightmapSize)
+{
+    if(!heightmapCreated) return;
+
+    std::vector<unsigned char>lightmap;
+    this->fastGenerateShadowmapParallel(lightDir, lightmap, lightmapSize);
+    // pass raw data to texture
+    gl.Bound(Texture::Target::_2D, this->terrainShadowmap)
+    .Image2D(0, PixelDataInternalFormat::R8, lightmapSize,
+             lightmapSize, 0,
+             PixelDataFormat::Red, PixelDataType::UnsignedByte, &lightmap[0])
+    .MinFilter(TextureMinFilter::Linear)
+    .MagFilter(TextureMagFilter::Linear)
+    .WrapS(TextureWrap::Repeat)
+    .WrapT(TextureWrap::Repeat);
+    // clear vector
+    lightmap.clear();
+}
+
+void Terrain::fastGenerateShadowmapParallel(glm::vec3 lightDir,
+        std::vector<unsigned char> &lightmap, unsigned int lightmapSize)
+{
     if(!heightmapCreated) return;
 
     if(glm::length2(lightDir) == 0.0) return;
 
     // initialize shadow map
-    lightmap = std::vector<unsigned char>(terrainResolution * terrainResolution);
+    lightmap = std::vector<unsigned char>(lightmapSize * lightmapSize);
     // create flag buffer to indicate where we've been
-    std::vector<float> flagMap(terrainResolution * terrainResolution);
+    std::vector<float> flagMap(lightmapSize * lightmapSize);
     // calculate absolute values for light direction
     float lightDirXMagnitude = lightDir[0];
     float lightDirZMagnitude = lightDir[2];
@@ -167,7 +196,8 @@ void Terrain::fastGenerateShadowmapParallel(
     // decide which loop will come first, the y loop or x loop
     // based on direction of light, makes calculations faster
     // outer loop
-    concurrency::parallel_for(int(0), terrainResolution, [&](int y)
+    float sFactor = (float)terrainResolution / lightmapSize;
+    concurrency::parallel_for(int(0), (int)lightmapSize, [&](int y)
     {
         int *X, *Y;
         int iX, iY;
@@ -211,15 +241,15 @@ void Terrain::fastGenerateShadowmapParallel(
         // just copy the previous block back just above the for loop
 
         if(dirY < 0)
-            iY = terrainResolution - y - 1;
+            iY = lightmapSize - y - 1;
         else
             iY = y;
 
         // inner loop
-        for(int x = 0; x < terrainResolution; x++)
+        for(int x = 0; x < lightmapSize; x++)
         {
             if(dirX < 0)
-                iX = terrainResolution - x - 1;
+                iX = lightmapSize - x - 1;
             else
                 iX = x;
 
@@ -233,7 +263,7 @@ void Terrain::fastGenerateShadowmapParallel(
             py = (float) * Y;
             origX = px;
             origY = py;
-            index = (*Y) * terrainResolution + (*X);
+            index = (*Y) * lightmapSize + (*X);
             distance = 0.0f;
 
             // travel along ray
@@ -243,8 +273,8 @@ void Terrain::fastGenerateShadowmapParallel(
                 py -= lightDir[2];
 
                 // check if we've reached the boundary
-                if(px < 0 || px >= terrainResolution - 1 || py < 0 ||
-                   py >= terrainResolution - 1)
+                if(px < 0 || px >= lightmapSize - 1 || py < 0 ||
+                   py >= lightmapSize - 1)
                 {
                     flagMap[index] = -1;
                     break;
@@ -269,20 +299,21 @@ void Terrain::fastGenerateShadowmapParallel(
                 w2 = du * invdv;
                 w3 = du * dv;
                 // compute interpolated height value from the heightmap direction below ray
-                interpolatedHeight = w0 * clamp(heightmap.getValue(x0, y0), 0.0, 1.0) * 255
-                                     + w1 * clamp(heightmap.getValue(x0, y1), 0.0, 1.0) * 255
-                                     + w2 * clamp(heightmap.getValue(x1, y0), 0.0, 1.0) * 255
-                                     + w3 * clamp(heightmap.getValue(x1, y1), 0.0, 1.0) * 255;
+                interpolatedHeight =
+                    w0 * clamp(heightmap.getValue(x0 * sFactor, y0 * sFactor), 0.0, 1.0) * 255
+                    + w1 * clamp(heightmap.getValue(x0 * sFactor, y1 * sFactor), 0.0, 1.0) * 255
+                    + w2 * clamp(heightmap.getValue(x1 * sFactor, y0 * sFactor), 0.0, 1.0) * 255
+                    + w3 * clamp(heightmap.getValue(x1 * sFactor, y1 * sFactor), 0.0, 1.0) * 255;
                 // compute interpolated flagmap value from point directly below ray
-                interpolatedFlagMap = w0 * flagMap[y0 * terrainResolution + x0]
-                                      + w1 * flagMap[y1 * terrainResolution + x0]
-                                      + w2 * flagMap[y0 * terrainResolution + x1]
-                                      + w3 * flagMap[y1 * terrainResolution + x1];
+                interpolatedFlagMap = w0 * flagMap[y0 * lightmapSize + x0]
+                                      + w1 * flagMap[y1 * lightmapSize + x0]
+                                      + w2 * flagMap[y0 * lightmapSize + x1]
+                                      + w3 * flagMap[y1 * lightmapSize + x1];
                 // get distance from original point to current point
                 //distance = sqrtf( (px-origX)*(px-origX) + (py-origY)*(py-origY) );
                 distance += distanceStep;
                 // get height at current point while traveling along light ray
-                height = clamp(heightmap.getValue(*X, *Y), 0.0,
+                height = clamp(heightmap.getValue(*X * sFactor, *Y * sFactor), 0.0,
                                1.0) * 255 + lightDir[1] * distance;
                 // check intersection with either terrain or flagMap
                 // if interpolatedHeight is less than interpolatedFlagMap that means
@@ -317,25 +348,6 @@ void Terrain::fastGenerateShadowmapParallel(
             }
         }
     });
-}
-
-void Terrain::fastGenerateShadowmapParallel(glm::vec3 lightDir)
-{
-    if(!heightmapCreated) return;
-
-    std::vector<unsigned char>lightmap;
-    this->fastGenerateShadowmapParallel(lightDir, lightmap);
-    // pass raw data to texture
-    gl.Bound(Texture::Target::_2D, this->terrainShadowmap)
-    .Image2D(0, PixelDataInternalFormat::R8, terrainResolution,
-             terrainResolution, 0,
-             PixelDataFormat::Red, PixelDataType::UnsignedByte, &lightmap[0])
-    .MinFilter(TextureMinFilter::Linear)
-    .MagFilter(TextureMagFilter::Linear)
-    .WrapS(TextureWrap::Repeat)
-    .WrapT(TextureWrap::Repeat);
-    // clear vector
-    lightmap.clear();
 }
 
 void Terrain::createTerrain(const int heightmapSize)
@@ -556,7 +568,7 @@ GLuint Terrain::getTextureId(int index)
 }
 
 Terrain::Terrain() : terrainMaxHeight(1.0f), heightmapCreated(false),
-    meshCreated(false)
+    meshCreated(false), timeScale(0.1f)
 {
     this->lightmapsFrequency = 24.0f;
     this->maxHeight = std::numeric_limits<float>::min();

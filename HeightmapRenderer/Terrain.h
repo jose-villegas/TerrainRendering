@@ -5,15 +5,18 @@ using namespace oglplus;
 
 class Terrain
 {
+    public:
+        glm::vec3 calculateLightDir(float time);
+        void calculateLightDir(float time, glm::vec3 &outDir, glm::vec3 &outColor);
     private:
         unsigned char * terrainLightmapsData;
         bool bakingDone = false;
+        bool enableTimeOfTheDayColorGrading = false;
+        float timeScale;
         std::thread bakingThread;
         // freq represents the number of sampler per day
         // for example 24 == 1 shadowmap per hour
         void bakeTimeOfTheDayShadowmap(float freq);
-        glm::vec3 calculateLightDir(float time);
-        void calculateLightDir(float time, glm::vec3 &outDir, glm::vec3 &outColor);
     private:
         bool heightmapCreated;
         bool meshCreated;
@@ -57,9 +60,15 @@ class Terrain
             glm::vec3 lightDir,
             std::vector<unsigned char> &lightmap
         );
+        void fastGenerateShadowmapParallel(
+            glm::vec3 lightDir,
+            std::vector<unsigned char> &lightmap,
+            unsigned int lightmapSize
+        );
         // writes lightmap to texture, clears vector data
         void fastGenerateShadowmapParallel(
-            glm::vec3 lightDir
+            glm::vec3 lightDir,
+            unsigned int lightmapSize
         );
 
         // creates a terrain of 2^sizeExponent + 1 size
@@ -75,6 +84,9 @@ class Terrain
         void loadTexture(const int index, const std::string &filepath);
         GLuint getTextureId(int index);
         GLuint getLightmapId() { return oglplus::GetName(this->terrainShadowmap); };
+
+        void EnableTimeOfTheDayColorGrading(bool val) { enableTimeOfTheDayColorGrading = val; }
+        void TimeScale(float val) { timeScale = val; }
 
         Terrain();
         ~Terrain();

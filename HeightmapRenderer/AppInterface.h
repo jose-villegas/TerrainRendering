@@ -12,6 +12,8 @@ class AppInterface
         float ranges[8];
         oglplus::Context gl;
         float textureRepeat[2];
+        bool colorGrading;
+        float timeScale;
     public:
         void initialize(GLFWwindow * window);
         void draw();

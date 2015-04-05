@@ -81,6 +81,23 @@ void AppInterface::draw()
                          ImGuiWindowFlags_NoMove);
             ImGui::Checkbox("Use Wireframe Mode", &wireframeMode);
 
+            if(ImGui::Checkbox("Use Time Color Grading", &colorGrading))
+            {
+                App::Instance()->getTerrain()
+                .EnableTimeOfTheDayColorGrading(colorGrading);
+            }
+
+            ImGui::Text("Time Scale");
+
+            if(ImGui::InputFloat("##tscale", &timeScale, 0.00001, 0.1, 10))
+            {
+                App::Instance()->getTerrain()
+                .TimeScale(timeScale);
+            }
+
+            // always positive
+            timeScale = std::max(0.0f, timeScale);
+
             if(wireframeMode)
             {
                 gl.PolygonMode(Face::FrontAndBack, PolygonMode::Line);
@@ -185,20 +202,16 @@ void AppInterface::draw()
             ImGui::SetNextWindowPos(ImVec2(stackedSize.x + 6, 3));
             ImGui::SetNextWindowCollapsed(true, ImGuiSetCond_Once);
 
-            if(ImGui::Begin("Shadow Map", nullptr,
+            if(ImGui::Begin("Light Map", nullptr,
                             ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings |
                             ImGuiWindowFlags_NoMove))
             {
                 App::Instance()->getTerrain().fastGenerateShadowmapParallel(
-                    glm::vec3(
-                        std::sin(glfwGetTime() * 0.1),
-                        std::cos(glfwGetTime() * 0.1) + 0.7,
-                        0.7
-                    )
+                    App::Instance()->getTerrain().calculateLightDir(glfwGetTime() * timeScale), 64
                 );
                 ImGui::Image(
                     (void *)(intptr_t)App::Instance()->getTerrain().getLightmapId(),
-                    ImVec2(200, 200),
+                    ImVec2(128, 128),
                     ImVec2(0.0, 0.0), ImVec2(1.0, 1.0),
                     ImColor(255, 255, 255, 255),
                     ImColor(255, 255, 255, 128)
@@ -245,6 +258,7 @@ AppInterface::AppInterface()
     this->meshResolution = 8;
     this->heightmapResolution = 8;
     this->textureRepeat[0] = this->textureRepeat[1] = 25.0f;
+    this->timeScale = 0.1f;
 
     for(int i = 0; i < 4; i++)
     {
