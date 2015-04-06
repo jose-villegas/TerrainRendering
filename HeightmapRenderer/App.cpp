@@ -159,34 +159,36 @@ void App::Start()
     // set view / camera matrix
     TransformationMatrices::View(
         glm::lookAt(
-            glm::vec3(1.0, 2.0, 1.0),
-            glm::vec3(0.0, 1.0, 0.0),
-            glm::vec3(0, 1, 0)
+            glm::vec3(0.0, 3.0, 5.0),
+            glm::vec3(0.0, 0.0, 0.0),
+            glm::vec3(0.0, 1.0, 0.0)
         )
     );
+    float time = 0.0f;
 
     while(!glfwWindowShouldClose(this->appWindow->getWindow()))
     {
+        time = (float)glfwGetTime();
         // clean color and depth buff
         gl.Clear().ColorBuffer().DepthBuffer(); glClear(GL_COLOR_BUFFER_BIT);
         // poll input events
         glfwPollEvents();
         // draw the user interface
-        gui.draw();
+        gui.draw(time);
         // scene transformations
-        TransformationMatrices::View(
-            glm::lookAt(
-                glm::vec3(
-                    std::sin(glfwGetTime() * 0) * 5.0,
-                    3.0,
-                    std::cos(glfwGetTime() * 0) * 5.0
-                ),
-                glm::vec3(0.0, 0.0, 0.0),
-                glm::vec3(0, 1, 0)
-            )
-        );
+        //TransformationMatrices::View(
+        //    glm::lookAt(
+        //        glm::vec3(
+        //            std::sin(glfwGetTime() * 0) * 5.0,
+        //            3.0,
+        //            std::cos(glfwGetTime() * 0) * 5.0
+        //        ),
+        //        glm::vec3(0.0, 0.0, 0.0),
+        //        glm::vec3(0, 1, 0)
+        //    )
+        //);
         // render terrain
-        terrain.display();
+        terrain.display(time);
         // render user interface
         gui.render();
         // swap double buffer

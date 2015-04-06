@@ -10,6 +10,8 @@ class Terrain
         glm::vec3 calculateLightDir(float time);
         // terrain light direction and color on time
         void calculateLightDir(float time, glm::vec3 &outDir, glm::vec3 &outColor);
+        // mesh height at position
+        float getMeshHeight(glm::vec2 position);
     private:
         // multiplies for current time
         float timeScale;
@@ -43,8 +45,8 @@ class Terrain
         int terrainResolution;
         // meshSize * meshSize = vertex count
         int meshSize;
-        float maxHeight;
-        float minHeight;
+        float heightScale;
+        float terrainHorizontalScale;
         int lightmapsFrequency;
         // utilities
         VertexArray terrainMesh;
@@ -63,7 +65,7 @@ class Terrain
 
     public:
         void initialize();
-        void display();
+        void display(float time);
         void bindBuffers();
 
         // lightmap as output, uses terrain resolution for lightmap size
@@ -104,6 +106,11 @@ class Terrain
         GLuint getTextureId(int index);
         // returns terrain extra lightmap, created with fastGenerateShadowmapParallel
         GLuint getLightmapId() { return oglplus::GetName(this->terrainShadowmap); };
+
+        // mesh vertical scaling
+        void HeightScale(float val);
+        // mesh horizontal scaling (scales x and z)
+        void TerrainHorizontalScale(float val);
 
         Terrain();
         ~Terrain();

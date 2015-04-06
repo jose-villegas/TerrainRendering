@@ -5,7 +5,7 @@ using namespace boost::algorithm;
 
 glm::vec3 Terrain::calculateLightDir(float time)
 {
-    float dirX = std::sin(time) * 2.0;
+    float dirX = std::sin(time) + 0.3f;
     float dirY = std::cos(time) + 0.7f;
     float dirZ = 0.7;
 
@@ -21,7 +21,7 @@ void Terrain::calculateLightDir(float time, glm::vec3 &outDir,
                                 glm::vec3 &outColor)
 {
     outColor = glm::vec3(1.0f, 1.0f, 0.86f);
-    float dirX = std::sin(time) * 2.0;
+    float dirX = std::sin(time) + 0.3f;
     float dirY = std::cos(time) + 0.7f;
     float dirZ = 0.7f;
 
@@ -65,7 +65,12 @@ void Terrain::calculateLightDir(float time, glm::vec3 &outDir,
     outDir = glm::vec3(dirX, std::abs(dirY), dirZ);
 }
 
-void Terrain::display()
+float Terrain::getMeshHeight(glm::vec2 position)
+{
+    return 0.0f;
+}
+
+void Terrain::display(float time)
 {
     if(!meshCreated) return;
 
@@ -83,16 +88,19 @@ void Terrain::display()
         this->terrainTextures.SetUniforms(program);
         static glm::vec3 lightColor, lightDir;
         // lighting calculations
-        calculateLightDir(glfwGetTime() * timeScale, lightDir, lightColor);
+        calculateLightDir(time * timeScale, lightDir, lightColor);
         glm::vec4 lightDirectionCameraSpace = TransformationMatrices::View()
                                               * glm::vec4(lightDir, 0.0f);
         // lighting
         Uniform<glm::vec3>(program, "directionalLight.direction").Set(
             glm::vec3(lightDirectionCameraSpace)
         );
-        Uniform<glm::vec3>(program, "directionalLight.base.color").Set(
-            lightColor
-        );
+
+        if(enableTimeOfTheDayColorGrading)
+        {
+            Uniform<glm::vec3>(program, "directionalLight.base.color").Set(lightColor);
+        }
+
         // set scene matrices uniforms
         Uniform<glm::mat4>(program, "matrix.modelViewProjection").Set(
             TransformationMatrices::ModelViewProjection()
@@ -105,9 +113,7 @@ void Terrain::display()
         );
         // shader time handler
         Uniform<GLfloat>(program, "currentLightmap").Set(
-            glfwGetTime() *
-            ((timeScale * (((float)lightmapsFrequency / 24.0f) * M_PI + 2)) /
-             lightmapsFrequency)
+            fmod(time * timeScale, M_PI * 2.0f) / (M_PI * 2.0f)
         );
     }
     // draw mesh
@@ -153,10 +159,8 @@ void Terrain::bindBuffers()
     buffer[3].Bind(Buffer::Target::ElementArray);
 }
 
-void Terrain::fastGenerateShadowmapParallel(
-    glm::vec3 lightDir,
-    std::vector<unsigned char> &lightmap
-)
+void Terrain::fastGenerateShadowmapParallel(glm::vec3 lightDir,
+        std::vector<unsigned char> &lightmap)
 {
     fastGenerateShadowmapParallel(lightDir, lightmap, terrainResolution);
 }
@@ -376,14 +380,18 @@ void Terrain::createTerrain(const int heightmapSize)
     .Set(glm::vec2(terrainResolution, terrainResolution));
     // reserve memory in main thread for new lightmap data
     terrainLightmapsData = new unsigned char[
-        this->terrainResolution * this->terrainResolution * 72
+        this->terrainResolution * this->terrainResolution * 96
     ];
 
     // wait if still working on previous data
     if(this->bakingThread.joinable()) this->bakingThread.join();
 
     // bake all the lightmaps in a separate thread so it doesn't freeze the main thread
-    this->bakingThread = std::thread(&Terrain::bakeTimeOfTheDayShadowmap, this, 72);
+    this->bakingThread = std::thread(
+                             &Terrain::bakeTimeOfTheDayShadowmap,
+                             this,
+                             96
+                         );
 }
 
 void Terrain::createMesh(const int meshResExponent)
@@ -552,7 +560,6 @@ void Terrain::createMesh(const int meshResExponent)
     }
     meshCreated = true;
     // clear data once uploaded to GPU
-    this->indices.clear();
     this->vertices.clear();
     this->texCoords.clear();
     this->normals.clear();
@@ -581,12 +588,40 @@ GLuint Terrain::getTextureId(int index)
     return this->terrainTextures.UITextureId(index);
 }
 
+void Terrain::HeightScale(float val)
+{
+    this->heightScale = val;
+    // modify model scale respectively
+    TransformationMatrices::Model(
+        glm::scale(
+            glm::mat4(), glm::vec3(
+                this->terrainHorizontalScale,
+                this->heightScale,
+                this->terrainHorizontalScale
+            )
+        )
+    );
+}
+
+void Terrain::TerrainHorizontalScale(float val)
+{
+    this->terrainHorizontalScale = val;
+    // modify model scale respectively
+    TransformationMatrices::Model(
+        glm::scale(
+            glm::mat4(), glm::vec3(
+                this->terrainHorizontalScale,
+                this->heightScale,
+                this->terrainHorizontalScale
+            )
+        )
+    );
+}
+
 Terrain::Terrain() : terrainMaxHeight(1.0f), heightmapCreated(false),
     meshCreated(false), timeScale(0.1f)
 {
     this->lightmapsFrequency = 24.0f;
-    this->maxHeight = std::numeric_limits<float>::min();
-    this->minHeight = std::numeric_limits<float>::max();
 }
 
 void Terrain::initialize()
@@ -610,10 +645,10 @@ void Terrain::initialize()
     );
     Uniform<glm::vec3>(program, "directionalLight.base.color").Set(
         // full sunlight
-        glm::vec3(1.0f, 1.0f, 0.9f)
+        glm::vec3(1.0f, 1.0f, 0.86f)
     );
     Uniform<glm::vec3>(program, "directionalLight.direction").Set(
-        glm::vec3(0.5f, 0.7f, 0.7f)
+        glm::vec3(0.5f, 1.7f, 0.7f)
     );
     Uniform<GLfloat>(program, "lightParams.ambientCoefficient").Set(
         0.1f
@@ -648,6 +683,9 @@ void Terrain::initialize()
     gl.Enable(Capability::CullFace);
     gl.FrontFace(FaceOrientation::CW);
     gl.CullFace(Face::Back);
+    // set initial mesh scales
+    this->HeightScale(2.0f);
+    this->TerrainHorizontalScale(15.f);
 }
 
 void Terrain::bakeTimeOfTheDayShadowmap(float freq)
@@ -684,5 +722,10 @@ void Terrain::bakeTimeOfTheDayShadowmap(float freq)
 
 Terrain::~Terrain()
 {
-    if(this->bakingThread.joinable()) this->bakingThread.join();
+    if(this->bakingThread.joinable())
+    {
+        this->bakingThread.join();
+
+        if(bakingDone) delete[]terrainLightmapsData;
+    };
 }

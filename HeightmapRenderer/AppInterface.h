@@ -16,7 +16,7 @@ class AppInterface
         float timeScale;
     public:
         void initialize(GLFWwindow * window);
-        void draw();
+        void draw(float time);
         void render();
         void terminate();
 

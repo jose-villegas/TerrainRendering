@@ -10,7 +10,7 @@ void AppInterface::initialize(GLFWwindow * window)
     ImGui_ImplGlfwGL3_Init(window, true);
 }
 
-void AppInterface::draw()
+void AppInterface::draw(float time)
 {
     // inmediate user interface new frame
     ImGui_ImplGlfwGL3_NewFrame();
@@ -27,6 +27,17 @@ void AppInterface::draw()
                              std::to_string((int)std::pow(2, meshResolution) + 1).c_str());
             ImGui::SliderInt("Heightmap Resolution", &heightmapResolution, 5, 11,
                              std::to_string((int)std::pow(2, heightmapResolution)).c_str());
+
+            if(ImGui::SliderFloat("Maximum Height", &maxHeight, 0.001f, 15.0f))
+            {
+                App::Instance()->getTerrain().HeightScale(maxHeight);
+            }
+
+            if(ImGui::InputFloat("Terrain Scale", &terrainScale, 0.01, 0.1))
+            {
+                App::Instance()->getTerrain().TerrainHorizontalScale(terrainScale);
+            }
+
             // generate new terrain on button press
 
             if(ImGui::Button("Generate Terrain"))
@@ -51,23 +62,6 @@ void AppInterface::draw()
                 wss << second_clock::universal_time();
                 // write terrain to file, concatenate timestamp
                 App::Instance()->getTerrain().Heightmap().writeToFile("terrain" + wss.str());
-            }
-
-            ImGui::Separator();
-
-            if(ImGui::SliderFloat("Maximum Height", &maxHeight, 0.001f, 15.0f))
-            {
-                TransformationMatrices::Model(
-                    glm::scale(glm::mat4(), glm::vec3(terrainScale, maxHeight, terrainScale))
-                );
-            }
-
-            if(ImGui::SliderFloat("Terrain Scale",
-                                  &terrainScale, 1.0f, 300.0f, "%.5f"))
-            {
-                TransformationMatrices::Model(
-                    glm::scale(glm::mat4(), glm::vec3(terrainScale, maxHeight, terrainScale))
-                );
             }
 
             stackedSize = ImGui::GetWindowSize();
@@ -199,7 +193,7 @@ void AppInterface::draw()
         }
         // shadow map
         {
-            ImGui::SetNextWindowPos(ImVec2(stackedSize.x + 6, 3));
+            ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x - 146, 3));
             ImGui::SetNextWindowCollapsed(true, ImGuiSetCond_Once);
 
             if(ImGui::Begin("Light Map", nullptr,
@@ -207,7 +201,7 @@ void AppInterface::draw()
                             ImGuiWindowFlags_NoMove))
             {
                 App::Instance()->getTerrain().fastGenerateShadowmapParallel(
-                    App::Instance()->getTerrain().calculateLightDir(glfwGetTime() * timeScale), 128
+                    App::Instance()->getTerrain().calculateLightDir(time * timeScale), 128
                 );
                 ImGui::Image(
                     (void *)(intptr_t)App::Instance()->getTerrain().getLightmapId(),
@@ -253,7 +247,7 @@ void AppInterface::terminate()
 
 AppInterface::AppInterface()
 {
-    this->maxHeight = 1.0;
+    this->maxHeight = 2.0;
     this->terrainScale = 15.f;
     this->meshResolution = 8;
     this->heightmapResolution = 8;
