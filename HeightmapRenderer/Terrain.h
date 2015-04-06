@@ -11,7 +11,7 @@ class Terrain
         // terrain light direction and color on time
         void calculateLightDir(float time, glm::vec3 &outDir, glm::vec3 &outColor);
         // mesh height at position
-        float getMeshHeight(glm::vec2 position);
+        float heightAt(glm::vec2 position);
     private:
         // multiplies for current time
         float timeScale;
@@ -21,6 +21,9 @@ class Terrain
         // flag to tell the main thread when lightmap baking is done
         // upload data to GPU once done
         bool bakingDone = false;
+        bool bakingInProgress = false;
+        // used to stop thread early
+        std::atomic<bool> earlyExit = false;
         // if enabled changes directional light color based on time
         bool enableTimeOfTheDayColorGrading = true;
         // thread for baking all time of the day lightmaps
@@ -33,6 +36,7 @@ class Terrain
         bool heightmapCreated;
         bool meshCreated;
         float terrainMaxHeight;
+        unsigned int indexSize;
         // mesh data gpu buffers
         std::array<Buffer, 4> buffer;
         // mesh data collections
@@ -62,7 +66,7 @@ class Terrain
         Heightmap heightmap;
         // multitexture handling class
         TerrainMultiTexture terrainTextures;
-
+        void createTOTD3DTexture();
     public:
         void initialize();
         void display(float time);

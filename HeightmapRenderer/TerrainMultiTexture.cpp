@@ -56,7 +56,7 @@ void TerrainMultiTexture::loadTexture(const std::string &filepath,
     gl.Bound(Texture::Target::_2DArray, this->texture)
     .MinFilter(TextureMinFilter::Linear)
     .MagFilter(TextureMagFilter::Linear)
-    .Anisotropy(2.0f)
+    .Anisotropy(8.0f)
     .WrapS(TextureWrap::Repeat)
     .WrapT(TextureWrap::Repeat)
     .SubImage3D(0, 0, 0, index, 512, 512, 1, pixelFormat,

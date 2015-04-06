@@ -89,6 +89,7 @@ void AppInterface::draw(float time)
                 .TimeScale(timeScale);
             }
 
+            ImGui::Checkbox("Pause", &pauseTime);
             // always positive
             timeScale = std::max(0.0f, timeScale);
 
@@ -261,6 +262,7 @@ AppInterface::AppInterface()
         ranges[i * 2 + 1] = float(i + 11) / 4;
     }
 
+    this->pauseTime = false;
     this->wireframeMode = false;
 }
 

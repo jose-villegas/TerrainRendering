@@ -115,6 +115,7 @@
     <ClInclude Include="OpenFileDialog.h" />
     <ClInclude Include="Terrain.h" />
     <ClInclude Include="Heightmap.h" />
+    <ClInclude Include="TerrainMultiTexture.h" />
     <ClInclude Include="TerrainPatch.h" />
     <ClInclude Include="LibNoise\include\noiseutils.h" />
     <ClInclude Include="MainWindow.h" />

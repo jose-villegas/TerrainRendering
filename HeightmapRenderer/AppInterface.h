@@ -14,7 +14,10 @@ class AppInterface
         float textureRepeat[2];
         bool colorGrading;
         float timeScale;
+
     public:
+        bool pauseTime;
+
         void initialize(GLFWwindow * window);
         void draw(float time);
         void render();
