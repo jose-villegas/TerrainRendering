@@ -25,7 +25,7 @@ void AppInterface::draw(float time)
                          ImGuiWindowFlags_NoMove);
             ImGui::SliderInt("Mesh Resolution", &meshResolution, 5, 11,
                              std::to_string((int)std::pow(2, meshResolution) + 1).c_str());
-            ImGui::SliderInt("Heightmap Resolution", &heightmapResolution, 5, 11,
+            ImGui::SliderInt("Map Resolution", &heightmapResolution, 5, 11,
                              std::to_string((int)std::pow(2, heightmapResolution)).c_str());
 
             if(ImGui::SliderFloat("Maximum Height", &maxHeight, 0.001f, 15.0f))
@@ -38,7 +38,13 @@ void AppInterface::draw(float time)
                 App::Instance()->getTerrain().TerrainHorizontalScale(terrainScale);
             }
 
-            // generate new terrain on button press
+            if(ImGui::Button("Bake"))
+            {
+                App::Instance()->getTerrain().bakeLightmaps(lightmapFreq);
+            }
+
+            ImGui::SameLine();
+            ImGui::SliderInt("Lightmaps", &lightmapFreq, 1, 720);
 
             if(ImGui::Button("Generate Terrain"))
             {
@@ -255,6 +261,7 @@ AppInterface::AppInterface()
     this->textureRepeat[0] = this->textureRepeat[1] = 25.0f;
     this->timeScale = 0.1f;
     this->colorGrading = true;
+    this->lightmapFreq = 96;
 
     for(int i = 0; i < 4; i++)
     {

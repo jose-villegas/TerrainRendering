@@ -91,7 +91,6 @@
     <ClCompile Include="OpenFileDialog.cpp" />
     <ClCompile Include="Terrain.cpp" />
     <ClCompile Include="Heightmap.cpp" />
-    <ClCompile Include="TerrainPatch.cpp" />
     <ClCompile Include="LibNoise\include\noiseutils.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
@@ -116,7 +115,6 @@
     <ClInclude Include="Terrain.h" />
     <ClInclude Include="Heightmap.h" />
     <ClInclude Include="TerrainMultiTexture.h" />
-    <ClInclude Include="TerrainPatch.h" />
     <ClInclude Include="LibNoise\include\noiseutils.h" />
     <ClInclude Include="MainWindow.h" />
     <ClInclude Include="TransformationMatrices.h" />

@@ -20,10 +20,9 @@ class Terrain
         unsigned char * terrainLightmapsData;
         // flag to tell the main thread when lightmap baking is done
         // upload data to GPU once done
-        bool bakingDone = false;
-        bool bakingInProgress = false;
-        // used to stop thread early
-        std::atomic<bool> earlyExit = false;
+        std::atomic<bool> bakingDone = false;
+        std::atomic<bool> bakingInProgress = false;
+        std::atomic<bool> earlyExit = false; // used on exit() to stop thread early
         // if enabled changes directional light color based on time
         bool enableTimeOfTheDayColorGrading = true;
         // thread for baking all time of the day lightmaps
@@ -31,7 +30,7 @@ class Terrain
         // freq represents the number of sampler per day
         // for example 24 == 1 shadowmap per hour
         // call using bakingThread, this is a heavy operation
-        void bakeTimeOfTheDayShadowmap(float freq);
+        void bakeTimeOfTheDayShadowmap();
     private:
         bool heightmapCreated;
         bool meshCreated;
@@ -92,6 +91,7 @@ class Terrain
         // creates a terrain of 2^sizeExponent + 1 size
         void createTerrain(const int heightmapSize);
         void createMesh(const int meshResExponent);
+        void bakeLightmaps(float freq);
 
         // getters
         Heightmap &Heightmap() { return heightmap; }

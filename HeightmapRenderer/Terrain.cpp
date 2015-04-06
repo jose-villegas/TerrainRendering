@@ -6,9 +6,10 @@ using namespace boost::algorithm;
 glm::vec3 Terrain::calculateLightDir(float time)
 {
     float dirX = std::sin(time) + 0.3f;
-    float dirY = std::cos(time) + 0.7f;
-    float dirZ = 0.7;
+    float dirY = std::cos(time) + 0.6f;
+    float dirZ = 0.7f;
 
+    // increment moon hight
     if(dirY < 0.0f)
     {
         dirY -= 1.0;
@@ -22,41 +23,43 @@ void Terrain::calculateLightDir(float time, glm::vec3 &outDir,
 {
     outColor = glm::vec3(1.0f, 1.0f, 0.86f);
     float dirX = std::sin(time) + 0.3f;
-    float dirY = std::cos(time) + 0.7f;
+    float dirY = std::cos(time) + 0.6f;
     float dirZ = 0.7f;
 
     if(enableTimeOfTheDayColorGrading)
     {
         // day light gradually turn to dawn
-        if(dirY >= 0.3f)
+        if(dirY >= 0.4f)
         {
             outColor =
                 glm::lerp(
                     glm::vec3(0.95f, 0.54f, 0.21f),
                     glm::vec3(1.0f, 1.00f, 0.86f),
-                    (dirY - 0.3f) / 1.4f
+                    (dirY - 0.4f) / 1.2f
                 );
         }
 
         // night time
-        if(dirY < 0.3 && dirY > 0.0f)
+        if(dirY < 0.4 && dirY > 0.0f)
         {
             outColor =
                 glm::lerp(
-                    glm::vec3(0.1, 0.1, 0.1),
+                    glm::vec3(0.21, 0.19, 0.17),
                     glm::vec3(0.95f, 0.54f, 0.21f),
-                    dirY * (1.0f / 0.3f)
+                    dirY * (1.0f / 0.4f)
                 );
         }
 
         // night moonlight
         if(dirY <= 0.0f)
         {
-            float moonFactor = (1.0 / 0.3) * std::abs(dirY) + 0.1;
+            glm::vec3 moonFactor = (1.0f / 0.4f) * std::abs(dirY)
+                                   + glm::vec3(0.21, 0.19, 0.17);
             outColor = glm::vec3(0.18, 0.21, 0.25) * moonFactor;
         }
     }
 
+    // increment moon hight
     if(dirY < 0.0f)
     {
         dirY -= 1.0;
@@ -113,7 +116,7 @@ void Terrain::display(float time)
         );
         // shader time handler
         Uniform<GLfloat>(program, "currentLightmap").Set(
-            fmod(time * timeScale, M_PI * 2.0f) / (M_PI * 2.0f)
+            fmod(time * timeScale, glm::pi<float>() * 2.0f) / (glm::pi<float>() * 2.0f)
         );
     }
     // draw mesh
@@ -243,7 +246,7 @@ void Terrain::fastGenerateShadowmapParallel(glm::vec3 lightDir,
             iY = y;
 
         // inner loop
-        for(int x = 0; x < lightmapSize; x++)
+        for(unsigned int x = 0; x < lightmapSize; x++)
         {
             if(dirX < 0)
                 iX = lightmapSize - x - 1;
@@ -297,10 +300,10 @@ void Terrain::fastGenerateShadowmapParallel(glm::vec3 lightDir,
                 w3 = du * dv;
                 // compute interpolated height value from the heightmap direction below ray
                 interpolatedHeight =
-                    w0 * clamp(heightmap.getValue(x0 * sFactor, y0 * sFactor), 0.0, 1.0) * 255
-                    + w1 * clamp(heightmap.getValue(x0 * sFactor, y1 * sFactor), 0.0, 1.0) * 255
-                    + w2 * clamp(heightmap.getValue(x1 * sFactor, y0 * sFactor), 0.0, 1.0) * 255
-                    + w3 * clamp(heightmap.getValue(x1 * sFactor, y1 * sFactor), 0.0, 1.0) * 255;
+                    w0 * clamp(heightmap.getValue(x0 * sFactor, y0 * sFactor), 0.0, 1.0) * 255.0f
+                    + w1 * clamp(heightmap.getValue(x0 * sFactor, y1 * sFactor), 0.0, 1.0) * 255.0f
+                    + w2 * clamp(heightmap.getValue(x1 * sFactor, y0 * sFactor), 0.0, 1.0) * 255.0f
+                    + w3 * clamp(heightmap.getValue(x1 * sFactor, y1 * sFactor), 0.0, 1.0) * 255.0f;
                 // compute interpolated flagmap value from point directly below ray
                 interpolatedFlagMap = w0 * flagMap[y0 * lightmapSize + x0]
                                       + w1 * flagMap[y1 * lightmapSize + x0]
@@ -311,7 +314,7 @@ void Terrain::fastGenerateShadowmapParallel(glm::vec3 lightDir,
                 distance += distanceStep;
                 // get height at current point while traveling along light ray
                 height = clamp(heightmap.getValue(*X * sFactor, *Y * sFactor), 0.0,
-                               1.0) * 255 + lightDir[1] * distance;
+                               1.0) * 255.0f + lightDir[1] * distance;
                 // check intersection with either terrain or flagMap
                 // if interpolatedHeight is less than interpolatedFlagMap that means
                 // we need to use the flagMap value instead
@@ -353,6 +356,9 @@ void Terrain::createTerrain(const int heightmapSize)
     if(heightmapSize == terrainResolution && heightmapCreated ||
        heightmapSize < 1) return;
 
+    // default lightmap freq value
+    this->lightmapsFrequency = (int)std::ceil(96);
+
     // wait if still working on previous data, locks main thread
     // since it is using the previous heightmap data
     if(this->bakingThread.joinable()) this->bakingThread.join();
@@ -374,7 +380,7 @@ void Terrain::createTerrain(const int heightmapSize)
     terrainLightmapsData = new unsigned char[this->terrainResolution *
             this->terrainResolution * 96];
     // bake all the lightmaps in a separate thread so it doesn't freeze the main thread
-    this->bakingThread = std::thread(&Terrain::bakeTimeOfTheDayShadowmap, this, 96);
+    this->bakingThread = std::thread(&Terrain::bakeTimeOfTheDayShadowmap, this);
 }
 
 void Terrain::createMesh(const int meshResExponent)
@@ -403,7 +409,6 @@ void Terrain::createMesh(const int meshResExponent)
     // load mesh positions and heights as vertices
     float textureU = (float)meshResolution * 0.1f;
     float textureV = (float)meshResolution * 0.1f;
-    float colScale, rowScale;
     // index buffer restart triangle strip
     int restartIndex = meshResolution * meshResolution;
     // parallel modification
@@ -552,6 +557,36 @@ void Terrain::createMesh(const int meshResExponent)
     this->indices.clear();
 }
 
+void Terrain::bakeLightmaps(float freq)
+{
+    if(lightmapsFrequency == std::ceil(freq)
+       || !meshCreated
+       || !heightmapCreated) return;
+
+    this->lightmapsFrequency = (int)std::ceil(freq);
+
+    // end early the current working thread
+    if(this->bakingThread.joinable())
+    {
+        this->earlyExit = true;
+        this->bakingThread.join();
+    }
+
+    // no need for early exit anymore
+    this->earlyExit = false;
+
+    // create 3d texture with existing data
+    // will only happend if thread finished successfully
+    if(bakingDone) createTOTD3DTexture();
+
+    // reserve memory in main thread for new lightmap data
+    terrainLightmapsData = new unsigned char[
+        this->terrainResolution * this->terrainResolution * this->lightmapsFrequency
+    ];
+    // bake all the lightmaps in a separate thread so it doesn't freeze the main thread
+    this->bakingThread = std::thread(&Terrain::bakeTimeOfTheDayShadowmap, this);
+}
+
 void Terrain::setTextureRepeatFrequency(const glm::vec2 &value)
 {
     program.Use();
@@ -608,7 +643,7 @@ void Terrain::TerrainHorizontalScale(float val)
 Terrain::Terrain() : terrainMaxHeight(1.0f), heightmapCreated(false),
     meshCreated(false), timeScale(0.1f)
 {
-    this->lightmapsFrequency = 24.0f;
+    this->lightmapsFrequency = 96;
 }
 
 void Terrain::initialize()
@@ -675,21 +710,20 @@ void Terrain::initialize()
     this->TerrainHorizontalScale(15.f);
 }
 
-void Terrain::bakeTimeOfTheDayShadowmap(float freq)
+void Terrain::bakeTimeOfTheDayShadowmap()
 {
     if(!heightmapCreated) return;
 
     this->bakingInProgress = true;
-    this->lightmapsFrequency = (int)std::ceil(freq);
     int sizeFreq = this->lightmapsFrequency;
 
     for(int i = 0; i < sizeFreq; i++)
     {
-        if(earlyExit) break;
+        if(earlyExit) return;
 
         std::vector<unsigned char> bakedLightmap;
         this->fastGenerateShadowmapParallel(
-            calculateLightDir(2.0f * M_PI * (float)i / (sizeFreq - 1)),
+            calculateLightDir(2.0f * glm::pi<float>() * (float)i / (float)(sizeFreq - 1)),
             bakedLightmap
         );
         std::copy(

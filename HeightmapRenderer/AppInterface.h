@@ -17,7 +17,7 @@ class AppInterface
 
     public:
         bool pauseTime;
-
+        int lightmapFreq;
         void initialize(GLFWwindow * window);
         void draw(float time);
         void render();
