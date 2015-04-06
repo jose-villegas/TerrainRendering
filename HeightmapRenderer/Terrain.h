@@ -6,6 +6,13 @@ using namespace oglplus;
 class Terrain
 {
     public:
+        // represents the amount of time on daylight
+        // 1.0f - sunTime = nightTime
+        const float sunTime = 0.6f;
+        // dawn starting point
+        const float dawnTime = 0.2f;
+        // scales moon height, moon goes from 0 to (1.0f - sunTime) * moonAltitude
+        const float moonAltitude = 2.5f;
         // terrain light direction on time
         glm::vec3 calculateLightDir(float time);
         // terrain light direction and color on time

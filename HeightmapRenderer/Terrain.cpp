@@ -6,13 +6,13 @@ using namespace boost::algorithm;
 glm::vec3 Terrain::calculateLightDir(float time)
 {
     float dirX = std::sin(time) + 0.3f;
-    float dirY = std::cos(time) + 0.6f;
+    float dirY = std::cos(time) + sunTime;
     float dirZ = 0.7f;
 
-    // increment moon hight
+    // increment moon height
     if(dirY < 0.0f)
     {
-        dirY -= 1.0;
+        dirY *= moonAltitude;
     }
 
     return glm::vec3(dirX, std::abs(dirY), dirZ);
@@ -23,46 +23,44 @@ void Terrain::calculateLightDir(float time, glm::vec3 &outDir,
 {
     outColor = glm::vec3(1.0f, 1.0f, 0.86f);
     float dirX = std::sin(time) + 0.3f;
-    float dirY = std::cos(time) + 0.6f;
+    float dirY = std::cos(time) + sunTime;
     float dirZ = 0.7f;
+
+    // increment moon height
+    if(dirY < 0.0f)
+    {
+        dirY *= moonAltitude;
+    }
 
     if(enableTimeOfTheDayColorGrading)
     {
-        // day light gradually turn to dawn
-        if(dirY >= 0.4f)
+        // day light to dawn light
+        if(dirY > dawnTime)
         {
-            outColor =
-                glm::lerp(
-                    glm::vec3(0.95f, 0.54f, 0.21f),
-                    glm::vec3(1.0f, 1.00f, 0.86f),
-                    (dirY - 0.4f) / 1.2f
-                );
+            outColor = glm::mix(
+                           glm::vec3(1.0f, 1.00f, 0.86f),
+                           glm::vec3(0.95f, 0.54f, 0.21f),
+                           1.0f - (dirY - dawnTime) / (1.0f + sunTime - dawnTime)
+                       );
         }
-
+        // dawn light to night light
+        else if(dirY <= dawnTime && dirY > 0.0f)
+        {
+            outColor = glm::mix(
+                           glm::vec3(0.95f, 0.54f, 0.21f),
+                           glm::vec3(0.21, 0.19, 0.17),
+                           1.0f - dirY / dawnTime
+                       );
+        }
         // night time
-        if(dirY < 0.4 && dirY > 0.0f)
+        else if(dirY <= 0.0f)
         {
-            outColor =
-                glm::lerp(
-                    glm::vec3(0.21, 0.19, 0.17),
-                    glm::vec3(0.95f, 0.54f, 0.21f),
-                    dirY * (1.0f / 0.4f)
-                );
+            outColor = glm::mix(
+                           glm::vec3(0.21, 0.19, 0.17),
+                           glm::vec3(0.18, 0.21, 0.25),
+                           1.0f - std::abs(dirY) / ((1.0f - sunTime) * moonAltitude)
+                       );
         }
-
-        // night moonlight
-        if(dirY <= 0.0f)
-        {
-            glm::vec3 moonFactor = (1.0f / 0.4f) * std::abs(dirY)
-                                   + glm::vec3(0.21, 0.19, 0.17);
-            outColor = glm::vec3(0.18, 0.21, 0.25) * moonFactor;
-        }
-    }
-
-    // increment moon hight
-    if(dirY < 0.0f)
-    {
-        dirY -= 1.0;
     }
 
     outDir = glm::vec3(dirX, std::abs(dirY), dirZ);
@@ -101,7 +99,8 @@ void Terrain::display(float time)
 
         if(enableTimeOfTheDayColorGrading)
         {
-            Uniform<glm::vec3>(program, "directionalLight.base.color").Set(lightColor);
+            Uniform<glm::vec3>(program, "directionalLight.base.intensities")
+            .Set(lightColor);
         }
 
         // set scene matrices uniforms
@@ -313,8 +312,8 @@ void Terrain::fastGenerateShadowmapParallel(glm::vec3 lightDir,
                 //distance = sqrtf( (px-origX)*(px-origX) + (py-origY)*(py-origY) );
                 distance += distanceStep;
                 // get height at current point while traveling along light ray
-                height = clamp(heightmap.getValue(*X * sFactor, *Y * sFactor), 0.0,
-                               1.0) * 255.0f + lightDir[1] * distance;
+                height = clamp(heightmap.getValue(*X * sFactor, *Y * sFactor), 0.0, 1.0)
+                         * 255.0f + lightDir[1] * distance;
                 // check intersection with either terrain or flagMap
                 // if interpolatedHeight is less than interpolatedFlagMap that means
                 // we need to use the flagMap value instead
@@ -662,10 +661,7 @@ void Terrain::initialize()
     program.Link();
     program.Use();
     // set prog uniforms
-    Uniform<GLfloat>(program, "directionalLight.base.intensity").Set(
-        0.85f
-    );
-    Uniform<glm::vec3>(program, "directionalLight.base.color").Set(
+    Uniform<glm::vec3>(program, "directionalLight.base.intensities").Set(
         // full sunlight
         glm::vec3(1.0f, 1.0f, 0.86f)
     );

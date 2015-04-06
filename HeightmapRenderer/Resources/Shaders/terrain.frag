@@ -8,6 +8,7 @@ const int MAX_SPOT_LIGHTS = 2;
 uniform float currentLightmap = 0.0f;
 
 uniform sampler3D bakedLightmaps;
+uniform sampler2D realTimeLightmap;
 uniform vec2 terrainUVScaling = vec2(25, 25);
 uniform vec2 terrainMapSize = vec2(256, 256);
 
@@ -39,8 +40,7 @@ struct Attenuation
 
 struct BaseLight
 {
-    vec3 color;
-    float intensity;
+    vec3 intensities;
 };
 
 uniform struct DirectionalLight
@@ -143,7 +143,7 @@ vec3 calculatePointLight(PointLight lightSource, vec3 position,
                                       + lightSource.attenuation.quadratic * lightDistance * lightDistance);
     // calculate lighting
     vec3 ambient = surfaceColor * lightParams.ambientCoefficient *
-                   lightSource.base.color;
+                   lightSource.base.intensities;
     vec3 specular = vec3(0.0f);
     vec3 diffuse = vec3(0.0f);
     // calculate lambertian for diffuse factor
@@ -151,8 +151,7 @@ vec3 calculatePointLight(PointLight lightSource, vec3 position,
 
     if(diffuseFactor > 0.0f)
     {
-        diffuse = lightSource.base.color * lightSource.base.intensity * surfaceColor *
-                  diffuseFactor;
+        diffuse = lightSource.base.intensities * surfaceColor * diffuseFactor;
         // calculate blinn-phong specular
         vec3 viewDirection = normalize(-position);
 
@@ -161,8 +160,7 @@ vec3 calculatePointLight(PointLight lightSource, vec3 position,
         {
             float specularFactor = blinnPhongSpecular(lightDirection, viewDirection,
                                    surfaceNormal, material.shininess);
-            specular = lightSource.base.color * lightSource.base.intensity *
-                       materialSpecular * specularFactor;
+            specular = lightSource.base.intensities * materialSpecular * specularFactor;
         }
     }
 
@@ -194,7 +192,7 @@ vec3 calculateDirectionalLight(DirectionalLight lightSource, vec3 position,
 {
     // calculate lighting
     vec3 ambient = surfaceColor * lightParams.ambientCoefficient *
-                   lightSource.base.color;
+                   lightSource.base.intensities;
     vec3 specular = vec3(0.0f);
     vec3 diffuse = vec3(0.0f);
     // calculate lambertian for diffuse factor
@@ -202,8 +200,7 @@ vec3 calculateDirectionalLight(DirectionalLight lightSource, vec3 position,
 
     if(diffuseFactor > 0.0f)
     {
-        diffuse = lightSource.base.color * lightSource.base.intensity * surfaceColor *
-                  diffuseFactor;
+        diffuse = lightSource.base.intensities * surfaceColor * diffuseFactor;
         // calculate blinn-phong specular
         vec3 viewDirection = normalize(-position);
 
@@ -212,8 +209,7 @@ vec3 calculateDirectionalLight(DirectionalLight lightSource, vec3 position,
         {
             float specularFactor = blinnPhongSpecular(lightSource.direction, viewDirection,
                                    surfaceNormal, material.shininess);
-            specular = lightSource.base.color * lightSource.base.intensity *
-                       materialSpecular * specularFactor;
+            specular = lightSource.base.intensities * materialSpecular * specularFactor;
         }
     }
 
@@ -257,10 +253,7 @@ float terrainShadow(vec2 texCoord)
         for(x = -1; x <= 1; x += 1.0)
         {
             vec2 offsets = vec2(x * xOffset, y * yOffset);
-            sum += texture(
-                       bakedLightmaps,
-                       vec3(texCoord + offsets, currentLightmap)
-                   ).r;
+            sum += texture(bakedLightmaps, vec3(texCoord + offsets, currentLightmap)).r;
         }
     }
 
