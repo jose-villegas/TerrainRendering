@@ -76,7 +76,7 @@ Heightmap::Heightmap() : bottomLeft(0), bottomRight(0),
     multiplierBase.SetSourceModule(0, flatTerrain);
     multiplierBase.SetSourceModule(1, waterZones);
     flatlandsAndWater.SetSourceModule(0, multiplierBase);
-    flatlandsAndWater.SetScale(0.25);
+    flatlandsAndWater.SetScale(0.15);
     flatlandsAndWater.SetBias(-0.75);
     // join  modules, flat and mountains
     terrainSelector.SetSourceModule(0, flatlandsAndWater);
