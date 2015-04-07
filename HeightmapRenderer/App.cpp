@@ -165,6 +165,8 @@ void App::Start()
         )
     );
     float time = 0.0f;
+    // new seed for rand
+    std::srand(std::time(nullptr));
 
     while(!glfwWindowShouldClose(this->appWindow->getWindow()))
     {
@@ -176,17 +178,17 @@ void App::Start()
         glfwPollEvents();
         // draw the user interface
         gui.draw(time);
-        //TransformationMatrices::View(
-        //    glm::lookAt(
-        //        glm::vec3(
-        //            std::sin(glfwGetTime() * 0.05) * 10.0,
-        //            5.0,
-        //            std::cos(glfwGetTime() * 0.05) * 10.0
-        //        ),
-        //        glm::vec3(0.0, 0.0, 0.0),
-        //        glm::vec3(0, 1, 0)
-        //    )
-        //);
+        TransformationMatrices::View(
+            glm::lookAt(
+                glm::vec3(
+                    std::sin(glfwGetTime() * 0.05) * 10.0,
+                    5.0,
+                    std::cos(glfwGetTime() * 0.05) * 10.0
+                ),
+                glm::vec3(0.0, 0.0, 0.0),
+                glm::vec3(0, 1, 0)
+            )
+        );
         // render terrain
         terrain.display(time);
         // render user interface

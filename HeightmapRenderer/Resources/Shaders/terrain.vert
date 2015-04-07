@@ -10,7 +10,11 @@ uniform struct Matrices
     mat4 normal;
 } matrix;
 
-uniform float maxHeight = 1.0f;
+uniform sampler3D bakedLightmaps;
+uniform sampler2D realTimeLightmap;
+uniform sampler2D heightmapField;
+uniform vec2 terrainUVScaling = vec2(25, 25);
+uniform vec2 terrainMapSize = vec2(256, 256);
 
 // Input vertex data
 layout(location = 0) in vec3 vertexPosition;
@@ -27,7 +31,7 @@ void main()
 {
     vec4 vertexPos = vec4(vertexPosition, 1.0f);
 
-    height = vertexPosition.y / maxHeight;
+    height = vertexPosition.y;
 
     texCoord = vertexTexCoords;
     normal = normalize(matrix.normal * vec4(vertexNormal, 0.0f)).xyz;

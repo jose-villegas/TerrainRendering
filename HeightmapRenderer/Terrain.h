@@ -37,11 +37,13 @@ class Terrain
         // freq represents the number of sampler per day
         // for example 24 == 1 shadowmap per hour
         // call using bakingThread, this is a heavy operation
-        void bakeTimeOfTheDayShadowmap();
+        void bakeTimeOfTheDayShadowmap(int lightmapSize);
     private:
+        // terrain status indicator
+        bool defaultLightmapsBaked = false;
         bool heightmapCreated;
         bool meshCreated;
-        float terrainMaxHeight;
+        // final index size
         unsigned int indexSize;
         // mesh data gpu buffers
         std::array<Buffer, 4> buffer;
@@ -53,17 +55,22 @@ class Terrain
         // mesh general data
         int meshResolution;
         int terrainResolution;
+        int lightmapResolution;
+        glm::vec3 meshSampleSquare;
         // meshSize * meshSize = vertex count
         int meshSize;
         float heightScale;
         float terrainHorizontalScale;
         int lightmapsFrequency;
+        int terrainSeed;
         // utilities
         VertexArray terrainMesh;
         FragmentShader fragmentShader;
         VertexShader vertexShader;
         Program program;
         Context gl;
+        // heightmap field texture
+        Texture heightmapField;
         // terrain shadows, generated with heightmap info
         Texture terrainShadowmap;
         // time of the day 3d texture
@@ -96,13 +103,10 @@ class Terrain
         );
 
         // creates a terrain of 2^sizeExponent + 1 size
-        void createTerrain(const int heightmapSize);
+        void createTerrain(const int heightmapSize, const glm::vec3 sampleSquare,
+                           int seed);
         void createMesh(const int meshResExponent);
-        void bakeLightmaps(float freq);
-
-        // getters
-        Heightmap &Heightmap() { return heightmap; }
-        Program &Program() { return program; }
+        void bakeLightmaps(float freq, int lightmapSize);
 
         // terrain multi texture control functions
         void setTextureRepeatFrequency(const glm::vec2 &value);
@@ -122,6 +126,9 @@ class Terrain
         void HeightScale(float val);
         // mesh horizontal scaling (scales x and z)
         void TerrainHorizontalScale(float val);
+
+        // saves terrain data to a bmp greyscale file
+        void saveTerrainToFile(const std::string &filename);
 
         Terrain();
         ~Terrain();

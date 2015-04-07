@@ -12,6 +12,9 @@ glm::vec3 Terrain::calculateLightDir(float time)
     // increment moon height
     if(dirY < 0.0f)
     {
+        // moon comes from other side
+        dirX += std::cos(time);
+        // scale moon height
         dirY *= moonAltitude;
     }
 
@@ -29,6 +32,9 @@ void Terrain::calculateLightDir(float time, glm::vec3 &outDir,
     // increment moon height
     if(dirY < 0.0f)
     {
+        // moon comes from other side
+        dirX += std::cos(time);
+        // scale moon height
         dirY *= moonAltitude;
     }
 
@@ -190,8 +196,8 @@ void Terrain::fastGenerateShadowmapParallel(glm::vec3 lightDir,
 
     if(lightDirZMagnitude < 0) lightDirZMagnitude *= -1;
 
-    float distanceStep = sqrtf(lightDir[0] * lightDir[0] + lightDir[1] *
-                               lightDir[1]);
+    float distanceStep = std::sqrt(lightDir[0] * lightDir[0] + lightDir[1] *
+                                   lightDir[1]);
     // decide which loop will come first, the y loop or x loop
     // based on direction of light, makes calculations faster
     // outer loop
@@ -349,37 +355,40 @@ void Terrain::fastGenerateShadowmapParallel(glm::vec3 lightDir,
     });
 }
 
-void Terrain::createTerrain(const int heightmapSize)
+void Terrain::createTerrain(const int heightmapSize,
+                            const glm::vec3 sampleSquare, int seed)
 {
-    // no need to redo the same operation
-    if(heightmapSize == terrainResolution && heightmapCreated ||
-       heightmapSize < 1) return;
+    // invalid size
+    if(heightmapSize < 1
+       || heightmapSize == terrainResolution
+       && sampleSquare == meshSampleSquare
+       && terrainSeed == seed) return;
 
-    // default lightmap freq value
-    this->lightmapsFrequency = (int)std::ceil(96);
-
-    // wait if still working on previous data, locks main thread
-    // since it is using the previous heightmap data
-    if(this->bakingThread.joinable()) this->bakingThread.join();
-
-    // create 3d texture with existing data
-    if(bakingDone) createTOTD3DTexture();
-
+    // terrain unique seed
+    this->terrainSeed = seed;
+    this->heightmap.setSeed(seed);
     // build new terrain
     this->terrainResolution = heightmapSize;
+    this->meshSampleSquare = sampleSquare;
     heightmap.setSize(terrainResolution, terrainResolution);
-    heightmap.setBounds(0, 4, 0, 4);
+    heightmap.setBounds(sampleSquare.x, sampleSquare.z,
+                        sampleSquare.y, sampleSquare.z);
     heightmap.build();
+    // create heightmap texture
+    gl.Bound(Texture::Target::_2D, this->heightmapField)
+    .Image2D(0, PixelDataInternalFormat::RGBA
+             , terrainResolution, terrainResolution, 0,
+             PixelDataFormat::RGBA, PixelDataType::UnsignedByte,
+             heightmap.RawImage())
+    .MinFilter(TextureMinFilter::Linear)
+    .MagFilter(TextureMagFilter::Linear)
+    .WrapS(TextureWrap::Repeat)
+    .WrapT(TextureWrap::Repeat);
     heightmapCreated = true;
     meshCreated = false;
     program.Use();
     Uniform<glm::vec2>(program, "terrainMapSize")
     .Set(glm::vec2(terrainResolution, terrainResolution));
-    // reserve memory in main thread for new lightmap data
-    terrainLightmapsData = new unsigned char[this->terrainResolution *
-            this->terrainResolution * 96];
-    // bake all the lightmaps in a separate thread so it doesn't freeze the main thread
-    this->bakingThread = std::thread(&Terrain::bakeTimeOfTheDayShadowmap, this);
 }
 
 void Terrain::createMesh(const int meshResExponent)
@@ -389,12 +398,7 @@ void Terrain::createMesh(const int meshResExponent)
     // will not create a mesh until height data is ready
     if(!heightmapCreated) return;
 
-    int newResolution = (int)std::pow(2, meshResExponent) + 1;
-
-    // no need to redo the same operation
-    if(newResolution == meshResolution && meshCreated) return;
-
-    this->meshResolution = newResolution;
+    this->meshResolution = (int)std::pow(2, meshResExponent) + 1;
     // clear any previous data
     this->indices.clear();
     this->vertices.clear();
@@ -423,8 +427,26 @@ void Terrain::createMesh(const int meshResExponent)
             // height map positions
             int xCor = (int)(j * (float)terrainResolution / meshResolution);
             int yCor = (int)(i * (float)terrainResolution / meshResolution);
+            float samplesSum = 0.0;
+            int samplesWeight = 0;
+
             // get vertex height from heightmap data
-            float vertexHeight = heightmap.getValue(xCor, yCor);
+            for(int x = -1; x <= 1; x++)
+            {
+                for(int y = -1; y <= 1; y++)
+                {
+                    if(x + xCor >= 0
+                       && x + xCor <= terrainResolution - 1
+                       && y + yCor >= 0
+                       && y + yCor <= terrainResolution - 1)
+                    {
+                        samplesWeight++;
+                        samplesSum += heightmap.getValue(x + xCor, y + yCor);
+                    }
+                }
+            }
+
+            float vertexHeight = samplesSum / samplesWeight;
             // transform from [-1,1] to [0,1]
             vertexHeight = clamp((vertexHeight + 1.0f) / 2.0f, 0.0f, 1.0f);
             // create vertex position
@@ -556,11 +578,12 @@ void Terrain::createMesh(const int meshResExponent)
     this->indices.clear();
 }
 
-void Terrain::bakeLightmaps(float freq)
+void Terrain::bakeLightmaps(float freq, int lightmapSize)
 {
-    if(lightmapsFrequency == std::ceil(freq)
-       || !meshCreated
-       || !heightmapCreated) return;
+    if(!meshCreated
+       || !heightmapCreated
+       || lightmapSize < 4
+      ) return;
 
     this->lightmapsFrequency = (int)std::ceil(freq);
 
@@ -578,12 +601,15 @@ void Terrain::bakeLightmaps(float freq)
     // will only happend if thread finished successfully
     if(bakingDone) createTOTD3DTexture();
 
+    this->lightmapResolution = lightmapSize;
     // reserve memory in main thread for new lightmap data
     terrainLightmapsData = new unsigned char[
-        this->terrainResolution * this->terrainResolution * this->lightmapsFrequency
+        lightmapSize * lightmapSize * lightmapsFrequency
     ];
     // bake all the lightmaps in a separate thread so it doesn't freeze the main thread
-    this->bakingThread = std::thread(&Terrain::bakeTimeOfTheDayShadowmap, this);
+    this->bakingThread = std::thread(
+                             &Terrain::bakeTimeOfTheDayShadowmap, this, lightmapSize
+                         );
 }
 
 void Terrain::setTextureRepeatFrequency(const glm::vec2 &value)
@@ -639,10 +665,15 @@ void Terrain::TerrainHorizontalScale(float val)
     );
 }
 
-Terrain::Terrain() : terrainMaxHeight(1.0f), heightmapCreated(false),
+void Terrain::saveTerrainToFile(const std::string &filename)
+{
+    this->heightmap.writeToFile(filename);
+}
+
+Terrain::Terrain() : heightScale(2.0f), heightmapCreated(false),
     meshCreated(false), timeScale(0.1f)
 {
-    this->lightmapsFrequency = 96;
+    this->lightmapsFrequency = 12;
 }
 
 void Terrain::initialize()
@@ -686,14 +717,11 @@ void Terrain::initialize()
     Uniform<GLfloat>(program, "material.shininessStrength").Set(
         0.016f
     );
-    Uniform<GLfloat>(program, "maxHeight").Set(
-        this->terrainMaxHeight
-    );
     Uniform<glm::vec2>(program, "terrainUVScaling").Set(
         glm::vec2(25, 25)
     );
     TransformationMatrices::Model(
-        glm::scale(glm::mat4(), glm::vec3(15, terrainMaxHeight, 15))
+        glm::scale(glm::mat4(), glm::vec3(15, heightScale, 15))
     );
     terrainMesh.Bind();
     // context flags
@@ -706,12 +734,12 @@ void Terrain::initialize()
     this->TerrainHorizontalScale(15.f);
 }
 
-void Terrain::bakeTimeOfTheDayShadowmap()
+void Terrain::bakeTimeOfTheDayShadowmap(int lightmapSize)
 {
     if(!heightmapCreated) return;
 
     this->bakingInProgress = true;
-    int sizeFreq = this->lightmapsFrequency;
+    float sizeFreq = (float)this->lightmapsFrequency;
 
     for(int i = 0; i < sizeFreq; i++)
     {
@@ -719,20 +747,21 @@ void Terrain::bakeTimeOfTheDayShadowmap()
 
         std::vector<unsigned char> bakedLightmap;
         this->fastGenerateShadowmapParallel(
-            calculateLightDir(2.0f * glm::pi<float>() * (float)i / (float)(sizeFreq - 1)),
-            bakedLightmap
+            calculateLightDir(2.0f * glm::pi<float>() * (float)(i + 1) / sizeFreq),
+            bakedLightmap, lightmapSize
         );
         std::copy(
             bakedLightmap.begin(), bakedLightmap.end(),
             &this->terrainLightmapsData[
-                i * this->terrainResolution * this->terrainResolution
+                i * lightmapSize * lightmapSize
             ]
         );
+        // print baking progress
         BOOST_LOG_TRIVIAL(info) << "Baking Info: Lightmap "
                                 << i + 1 << "/"
                                 << lightmapsFrequency
                                 << " ("
-                                << (int)(100 * (float)i / (lightmapsFrequency - 1))
+                                << (int)(100 * (float)(i + 1) / (lightmapsFrequency))
                                 << "%) created";
         bakedLightmap.clear();
     };
@@ -749,14 +778,18 @@ void Terrain::createTOTD3DTexture()
     .Anisotropy(2.0f)
     .WrapS(TextureWrap::Repeat)
     .WrapT(TextureWrap::Repeat)
-    .Image3D(0, PixelDataInternalFormat::R8, terrainResolution,
-             terrainResolution, this->lightmapsFrequency, 0,
+    .Image3D(0, PixelDataInternalFormat::R8, lightmapResolution,
+             lightmapResolution, this->lightmapsFrequency, 0,
              PixelDataFormat::Red, PixelDataType::UnsignedByte, terrainLightmapsData);
+    // print baking info
     BOOST_LOG_TRIVIAL(info) << "Baking Done, "
                             << this->lightmapsFrequency
                             << " lightmaps created, "
                             << (float)this->lightmapsFrequency / 24.0f
                             << " per hour";
+    // set new lightmap size to shader
+    Uniform<glm::vec2>(program, "lightmapSize")
+    .Set(glm::vec2(lightmapResolution, lightmapResolution));
     // delete temporal raw data once uploaded to gpu
     delete[]terrainLightmapsData;
     // baking flags for done upload

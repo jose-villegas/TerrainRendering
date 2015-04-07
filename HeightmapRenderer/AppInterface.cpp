@@ -38,25 +38,35 @@ void AppInterface::draw(float time)
                 App::Instance()->getTerrain().TerrainHorizontalScale(terrainScale);
             }
 
-            if(ImGui::Button("Bake"))
-            {
-                App::Instance()->getTerrain().bakeLightmaps(lightmapFreq);
-            }
-
+            ImGui::InputFloat3("Sample Range", terrainRange, 3);
+            ImGui::InputInt("Seed", &terrainSeed);
             ImGui::SameLine();
-            ImGui::SliderInt("Lightmaps", &lightmapFreq, 1, 720);
+            ImGui::Checkbox("Random", &useRandom);
+            ImGui::InputInt2("##lbk", lightmapFreq);
+            ImGui::SameLine();
+            // set proper ranges
+            lightmapFreq[0] = std::max(1, lightmapFreq[0]);
+            lightmapFreq[1] = std::min(std::max(4, lightmapFreq[1]), 4096);
+
+            if(ImGui::Button("Bake Lightmaps"))
+            {
+                App::Instance()->getTerrain().bakeLightmaps(lightmapFreq[0], lightmapFreq[1]);
+            }
 
             if(ImGui::Button("Generate Terrain"))
             {
+                if(useRandom) terrainSeed = std::rand();
+
                 App::Instance()->getTerrain().createTerrain(
-                    (int)std::pow(2, heightmapResolution)
+                    (int)std::pow(2, heightmapResolution),
+                    glm::vec3(terrainRange[0], terrainRange[1], terrainRange[2]), terrainSeed
                 );
                 App::Instance()->getTerrain().createMesh(meshResolution);
             }
 
             ImGui::SameLine();
 
-            if(ImGui::Button("Save Heightmap"))
+            if(ImGui::Button("Save Heightmap To File"))
             {
                 using namespace boost::posix_time;
                 // set string format
@@ -67,7 +77,7 @@ void AppInterface::draw(float time)
                 // get current time
                 wss << second_clock::universal_time();
                 // write terrain to file, concatenate timestamp
-                App::Instance()->getTerrain().Heightmap().writeToFile("terrain" + wss.str());
+                App::Instance()->getTerrain().saveTerrainToFile("terrain" + wss.str());
             }
 
             stackedSize = ImGui::GetWindowSize();
@@ -261,7 +271,9 @@ AppInterface::AppInterface()
     this->textureRepeat[0] = this->textureRepeat[1] = 25.0f;
     this->timeScale = 0.1f;
     this->colorGrading = true;
-    this->lightmapFreq = 96;
+    this->lightmapFreq[0] = 12;
+    this->lightmapFreq[1] = 256;
+    this->terrainRange[2] = 5.0f;
 
     for(int i = 0; i < 4; i++)
     {

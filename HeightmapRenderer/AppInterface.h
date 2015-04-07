@@ -10,6 +10,7 @@ class AppInterface
         bool wireframeMode;
         float terrainScale;
         float ranges[8];
+        float terrainRange[3];
         oglplus::Context gl;
         float textureRepeat[2];
         bool colorGrading;
@@ -17,7 +18,10 @@ class AppInterface
 
     public:
         bool pauseTime;
-        int lightmapFreq;
+        int lightmapFreq[2];
+        int terrainSeed;
+        bool terrainSeedSet;
+        bool useRandom;
         void initialize(GLFWwindow * window);
         void draw(float time);
         void render();

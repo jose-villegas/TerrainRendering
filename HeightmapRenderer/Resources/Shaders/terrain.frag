@@ -9,8 +9,10 @@ uniform float currentLightmap = 0.0f;
 
 uniform sampler3D bakedLightmaps;
 uniform sampler2D realTimeLightmap;
+uniform sampler2D heightmapField;
 uniform vec2 terrainUVScaling = vec2(25, 25);
 uniform vec2 terrainMapSize = vec2(256, 256);
+uniform vec2 lightmapSize = vec2(256, 256);
 
 const int MAX_TERRAIN_TEXTURE_RANGES = 4;
 uniform sampler2DArray terrainTextures;
@@ -245,8 +247,8 @@ float terrainShadow(vec2 texCoord)
 {
     float sum = 0.0;
     float x, y;
-    float xOffset = 1.0 / terrainMapSize.x;
-    float yOffset = 1.0 / terrainMapSize.y;
+    float xOffset = 1.0 / lightmapSize.x;
+    float yOffset = 1.0 / lightmapSize.y;
 
     for(y = -1; y <= 1; y += 1.0)
     {
@@ -258,6 +260,35 @@ float terrainShadow(vec2 texCoord)
     }
 
     return 1.0 - sum / 16.0;
+}
+
+vec3 getHeightmapPosition(float x, float y, vec2 texCoord){
+    vec2 uv = (texCoord.xy + vec2(x, y)); 
+    float h = texture2D(heightmapField, uv).x;
+    return vec3(uv.x, h, uv.y);
+}
+
+float terrainOcclusion(vec3 position, vec3 normal, vec2 texCoord, float rayLength)
+{
+    float occlusion = 0.0f;
+    mat3 orthobasis = mat3(matrix.normal);
+
+    for(int i = 1; i < 33; i++)
+    {
+        float s = float(i) / 32.0f;
+        float a = sqrt(s * terrainMapSize.x);
+        float b = sqrt(s);
+        float x = sin(a) * b * rayLength;
+        float y = cos(a) * b * rayLength;
+        vec3 sampleUV = orthobasis * vec3(x, 0.0, y);
+        vec3 samplePos = getHeightmapPosition(sampleUV.x, sampleUV.z, texCoord);
+        vec3 sampleDir = normalize(samplePos - position);
+        float lambertian = clamp(dot(normal, sampleDir), 0.0f, 1.0f);
+        float distFactor = 0.23f / sqrt(length(samplePos - position));
+        occlusion += distFactor * lambertian;
+    }
+
+    return max(0.0, (1.0 - occlusion / 32.0));
 }
 
 // Vertex shader inputs
@@ -289,6 +320,9 @@ void main()
         totalLight += calculateSpotLight(spotLight[i], position, surfaceNormal,
                                          surfaceColor, materialSpecular);
     }
+    float occlusion = terrainOcclusion(position, surfaceNormal, texCoord, 10.0f);
+    // occlusion strength
+    occlusion = pow(occlusion, 4.0f);
 
-    fragColor = vec4(totalLight, 1.0f);
+    fragColor = vec4(totalLight * occlusion, 1.0f);
 }
