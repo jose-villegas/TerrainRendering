@@ -114,9 +114,9 @@ void Terrain::render(float time)
     //    indexSize,
     //    DataType::UnsignedInt
     //);
-    for(int i = 0; i < 32; i++)
+    for(int i = 0; i < chunkGenerator.ChunkCount(); i++)
     {
-        for(int j = 0; j < 32; j++)
+        for(int j = 0; j < chunkGenerator.ChunkCount(); j++)
         {
             chunkGenerator.MeshChunk(j, i).bindBuffer(program);
             chunkGenerator.MeshChunk(j, i).drawElements();
