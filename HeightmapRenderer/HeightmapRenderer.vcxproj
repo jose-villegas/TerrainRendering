@@ -80,6 +80,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="App.cpp" />
+    <ClCompile Include="ChunkDetailLevel.cpp" />
     <ClCompile Include="ImGui\imgui.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
@@ -102,6 +103,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="TerrainChunk.cpp" />
+    <ClCompile Include="TerrainChunksGenerator.cpp" />
     <ClCompile Include="TerrainMultiTexture.cpp" />
     <ClCompile Include="TransformationMatrices.cpp" />
     <ClCompile Include="AppInterface.cpp" />
@@ -109,6 +111,7 @@
   <ItemGroup>
     <ClInclude Include="App.h" />
     <ClInclude Include="AppInterface.h" />
+    <ClInclude Include="ChunkDetailLevel.h" />
     <ClInclude Include="Commons.h" />
     <ClInclude Include="ImGui\imgui.h" />
     <ClInclude Include="ImGui\imgui_impl_glfw_gl3.h" />
@@ -116,6 +119,7 @@
     <ClInclude Include="Terrain.h" />
     <ClInclude Include="Heightmap.h" />
     <ClInclude Include="TerrainChunk.h" />
+    <ClInclude Include="TerrainChunksGenerator.h" />
     <ClInclude Include="TerrainMultiTexture.h" />
     <ClInclude Include="LibNoise\include\noiseutils.h" />
     <ClInclude Include="MainWindow.h" />

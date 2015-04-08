@@ -22,6 +22,7 @@ class AppInterface
         int terrainSeed;
         bool terrainSeedSet;
         bool useRandom;
+        int occlusionStrenght;
         void initialize(GLFWwindow * window);
         void draw(float time);
         void render();

@@ -32,6 +32,8 @@ void TerrainMultiTexture::loadTexture(const std::string &filepath,
 
     // highest quality rescaleing
     dib = FreeImage_Rescale(dib, 512, 512, FILTER_BICUBIC);
+    // no alpha channel for terrain textures
+    dib = FreeImage_ConvertTo24Bits(dib);
     // dib = FreeImage_ConvertTo32Bits(dib);
     // get raw data
     unsigned char * bits = FreeImage_GetBits(dib);
@@ -47,26 +49,22 @@ void TerrainMultiTexture::loadTexture(const std::string &filepath,
         return;
     }
 
-    // Check Image Bit Density
-    PixelDataFormat pixelFormat = bitsPerPixel == 32 ? PixelDataFormat::BGRA :
-                                  bitsPerPixel == 24 ? PixelDataFormat::BGR :
-                                  bitsPerPixel == 16 ? PixelDataFormat::RG :
-                                  PixelDataFormat::Red;
     // pass data to the texture array
     gl.Bound(Texture::Target::_2DArray, this->texture)
-    .MinFilter(TextureMinFilter::Linear)
+    .MinFilter(TextureMinFilter::LinearMipmapLinear)
     .MagFilter(TextureMagFilter::Linear)
-    .Anisotropy(8.0f)
+    .GenerateMipmap()
     .WrapS(TextureWrap::Repeat)
     .WrapT(TextureWrap::Repeat)
-    .SubImage3D(0, 0, 0, index, 512, 512, 1, pixelFormat,
+    .Anisotropy(16.0f)
+    .SubImage3D(0, 0, 0, index, 512, 512, 1, PixelDataFormat::BGR,
                 PixelDataType::UnsignedByte, bits);
     // pass data to interface texture
     gl.Bound(Texture::Target::_2D, this->uiTextures[index])
-    .Image2D(0, PixelDataInternalFormat::RGBA8, 512, 512, 0,
-             pixelFormat, PixelDataType::UnsignedByte, bits)
-    .MinFilter(TextureMinFilter::Linear)
-    .MagFilter(TextureMagFilter::Linear)
+    .Image2D(0, PixelDataInternalFormat::RGB8, 512, 512, 0, PixelDataFormat::BGR,
+             PixelDataType::UnsignedByte, bits)
+    .MinFilter(TextureMinFilter::Nearest)
+    .MagFilter(TextureMagFilter::Nearest)
     .WrapS(TextureWrap::ClampToEdge)
     .WrapT(TextureWrap::ClampToEdge);
     // unload data from memory once uploaded to gpu
@@ -78,8 +76,8 @@ void TerrainMultiTexture::loadTexture(const std::string &filepath,
 TerrainMultiTexture::TerrainMultiTexture()
 {
     gl.Bound(Texture::Target::_2DArray, this->texture)
-    .Image3D(0, PixelDataInternalFormat::RGBA8, 512, 512, 4, 0,
-             PixelDataFormat::BGRA, PixelDataType::UnsignedByte, nullptr);
+    .Image3D(0, PixelDataInternalFormat::SRGB8, 512, 512, 4, 0,
+             PixelDataFormat::BGR, PixelDataType::UnsignedByte, nullptr);
 
     for(int i = 0; i < MAX_TERRAIN_TEXTURE_RANGES; i++)
     {

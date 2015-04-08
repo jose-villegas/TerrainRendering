@@ -1,18 +1,19 @@
 #pragma once
 #include "Heightmap.h"
 #include "TerrainMultiTexture.h"
+#include "TerrainChunksGenerator.h"
 using namespace oglplus;
 
 class Terrain
 {
     public:
+        TerrainChunksGenerator chunkGenerator;
         // represents the amount of time on daylight
-        // 1.0f - sunTime = nightTime
         const float sunTime = 0.6f;
-        // dawn starting point
-        const float dawnTime = 0.2f;
-        // scales moon height, moon goes from 0 to (1.0f - sunTime) * moonAltitude
-        const float moonAltitude = 2.5f;
+        // scales moon height and nightlight
+        const float moonAltitude = 1.3f;
+        // scales sun height at daylight
+        const float sunAltitude = 1.9f;
         // terrain light direction on time
         glm::vec3 calculateLightDir(float time);
         // terrain light direction and color on time
@@ -20,6 +21,7 @@ class Terrain
         // mesh height at position
         float heightAt(glm::vec2 position);
     private:
+        void setProgramUniforms(float time);
         // multiplies for current time
         float timeScale;
         // temporal baked ligthmaps data, deleted once
@@ -47,11 +49,6 @@ class Terrain
         unsigned int indexSize;
         // mesh data gpu buffers
         std::array<Buffer, 4> buffer;
-        // mesh data collections
-        std::vector<glm::vec3> vertices;
-        std::vector<glm::vec2> texCoords;
-        std::vector<glm::vec3> normals;
-        std::vector<unsigned int> indices;
         // mesh general data
         int meshResolution;
         int terrainResolution;
@@ -82,7 +79,8 @@ class Terrain
         void createTOTD3DTexture();
     public:
         void initialize();
-        void display(float time);
+        void render(float time);
+        // binds the terrain buffers, whole mesh data
         void bindBuffers();
 
         // lightmap as output, uses terrain resolution for lightmap size
@@ -132,5 +130,6 @@ class Terrain
 
         Terrain();
         ~Terrain();
+        void Occlusion(float occlusionStrenght);
 };
 

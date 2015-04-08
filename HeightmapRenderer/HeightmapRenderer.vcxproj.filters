@@ -54,7 +54,13 @@
     <ClCompile Include="OpenFileDialog.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="TerrainChunksGenerator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="TerrainChunk.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ChunkDetailLevel.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -95,7 +101,13 @@
     <ClInclude Include="TerrainMultiTexture.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="TerrainChunksGenerator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="TerrainChunk.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ChunkDetailLevel.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

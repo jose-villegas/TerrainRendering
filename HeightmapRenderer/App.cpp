@@ -190,7 +190,7 @@ void App::Start()
             )
         );
         // render terrain
-        terrain.display(time);
+        terrain.render(time);
         // render user interface
         gui.render();
         // swap double buffer

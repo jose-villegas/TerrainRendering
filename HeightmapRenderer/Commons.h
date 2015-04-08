@@ -42,6 +42,7 @@
 #include <glm/detail/type_vec3.hpp>
 #include <glm/gtx/common.hpp>
 #include <glm/gtx/compatibility.hpp>
+#include <glm/gtx/color_space.hpp>
 // boost c++ general utils headers
 #include <boost/version.hpp>
 #include <boost/log/core.hpp>
@@ -58,6 +59,7 @@
 #include <boost/log/sources/record_ostream.hpp>
 #include <boost/log/support/date_time.hpp>
 #include <boost/algorithm/clamp.hpp>
+#include <boost/format.hpp>
 // ui library imgui (inmediate mode gui)
 #include "ImGui/imgui.h"
 #include "ImGui/imgui_impl_glfw_gl3.h"

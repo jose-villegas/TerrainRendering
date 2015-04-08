@@ -85,16 +85,40 @@ void AppInterface::draw(float time)
         }
         // rendering options
         {
+            static glm::vec3 colorAt;
             ImGui::SetNextWindowPos(ImVec2(3, stackedSize.y + 6));
             ImGui::Begin("Rendering Options", nullptr,
                          ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings |
                          ImGuiWindowFlags_NoMove);
             ImGui::Checkbox("Use Wireframe Mode", &wireframeMode);
 
-            if(ImGui::Checkbox("Use Time Color Grading", &colorGrading))
+            if(ImGui::Checkbox("Time Color Grading", &colorGrading))
             {
                 App::Instance()->getTerrain()
                 .EnableTimeOfTheDayColorGrading(colorGrading);
+            }
+
+            if(colorGrading)
+            {
+                static ImVec2 windowSize = ImGui::GetWindowSize();
+                static float tempTest = 0;
+                App::Instance()->getTerrain()
+                .calculateLightDir(time * timeScale, glm::vec3(), colorAt);
+                ImGui::PushStyleColor(
+                    ImGuiCol_FrameBg,
+                    ImVec4(colorAt.r, colorAt.g, colorAt.b, 1.0f)
+                );
+                //static std::string timeString;
+                //static boost::format formatter("%d:%d : %d");
+                //int timeTarget = (abs(-std::cos(time * timeScale))) * 86400.0f;
+                //int hour = (timeTarget / 3600) % 24;
+                //int second = timeTarget % 3600;
+                //int minute = second / 60;
+                //second = second % 60;
+                //formatter % hour % minute % second;
+                //timeString = formatter.str();
+                ImGui::SliderFloat("##color", &tempTest, 0, 0, "");
+                ImGui::PopStyleColor();
             }
 
             ImGui::Text("Time Scale");
@@ -103,6 +127,13 @@ void AppInterface::draw(float time)
             {
                 App::Instance()->getTerrain()
                 .TimeScale(timeScale);
+            }
+
+            ImGui::Text("Ambient Occlusion");
+
+            if(ImGui::SliderInt("##ao", &occlusionStrenght, 0, 32))
+            {
+                App::Instance()->getTerrain().Occlusion(occlusionStrenght);
             }
 
             ImGui::Checkbox("Pause", &pauseTime);
@@ -264,6 +295,7 @@ void AppInterface::terminate()
 
 AppInterface::AppInterface()
 {
+    this->occlusionStrenght = 4;
     this->maxHeight = 2.0;
     this->terrainScale = 15.f;
     this->meshResolution = 8;

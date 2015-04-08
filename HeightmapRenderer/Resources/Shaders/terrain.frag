@@ -5,7 +5,11 @@
 const int MAX_POINT_LIGHTS = 2;
 const int MAX_SPOT_LIGHTS = 2;
 
+float shadowing = 1.0f;
+float occlusion = 1.0f;
+
 uniform float currentLightmap = 0.0f;
+uniform float occlusionStrength = 4.0f;
 
 uniform sampler3D bakedLightmaps;
 uniform sampler2D realTimeLightmap;
@@ -166,7 +170,7 @@ vec3 calculatePointLight(PointLight lightSource, vec3 position,
         }
     }
 
-    return ambient + (specular + diffuse) * attenuationFactor;
+    return ambient + (specular + diffuse) * attenuationFactor * shadowing * occlusion;
 }
 
 vec3 calculateSpotLight(SpotLight lightSource, vec3 position,
@@ -215,7 +219,7 @@ vec3 calculateDirectionalLight(DirectionalLight lightSource, vec3 position,
         }
     }
 
-    return ambient + (specular + diffuse);
+    return ambient + (specular + diffuse) * shadowing * occlusion;
 }
 
 vec3 generateTerrainColor(float height, vec2 texCoord)
@@ -302,9 +306,18 @@ layout(location = 0) out vec4 fragColor;
 void main()
 {
     vec3 surfaceNormal = normalize(normal);
-    vec3 surfaceColor = generateTerrainColor(height,
-                        texCoord) * terrainShadow(texCoord);
-    vec3 materialSpecular = material.specular * material.shininessStrength;
+    vec3 surfaceColor = generateTerrainColor(height, texCoord);
+    vec3 materialSpecular = material.specular * material.shininessStrength * height;
+    // shader variables
+    shadowing = terrainShadow(texCoord);
+
+    if(occlusionStrength > 0.0f)
+    {
+        occlusion = terrainOcclusion(position, surfaceNormal, texCoord, 10.0f);
+        // occlusion strength
+        occlusion = pow(occlusion, occlusionStrength);
+    }
+
     // total light from all light sources
     vec3 totalLight = calculateDirectionalLight(directionalLight, position,
                       surfaceNormal, surfaceColor, materialSpecular);
@@ -320,9 +333,8 @@ void main()
         totalLight += calculateSpotLight(spotLight[i], position, surfaceNormal,
                                          surfaceColor, materialSpecular);
     }
-    float occlusion = terrainOcclusion(position, surfaceNormal, texCoord, 10.0f);
-    // occlusion strength
-    occlusion = pow(occlusion, 4.0f);
 
-    fragColor = vec4(totalLight * occlusion, 1.0f);
+    // gamma correction
+    vec3 gamma = vec3(1.0f / 2.2f);
+    fragColor = vec4(pow(totalLight, gamma), 1.0f);
 }

@@ -1,22 +1,28 @@
 #include "Commons.h"
 #include "Terrain.h"
 #include "TransformationMatrices.h"
+#include "ChunkDetailLevel.h"
 using namespace boost::algorithm;
 
 glm::vec3 Terrain::calculateLightDir(float time)
 {
     float dirX = std::sin(time) + 0.3f;
-    float dirY = std::cos(time) + sunTime;
     float dirZ = 0.7f;
+    // scale to 0 -> 1
+    float dirY = (std::cos(time) + sunTime) / (1.0f + sunTime);
 
-    // increment moon height
+    // scale to 0 -> -1
     if(dirY < 0.0f)
     {
+        float minimum = (1.0f - sunTime) / (1.0f + sunTime);
+        dirY = dirY / minimum;
         // moon comes from other side
         dirX += std::cos(time);
-        // scale moon height
-        dirY *= moonAltitude;
     }
+
+    // scale moon and sun altitudes
+    if(dirY > 0.0) dirY *= sunAltitude;
+    else dirY *= moonAltitude;
 
     return glm::vec3(dirX, std::abs(dirY), dirZ);
 }
@@ -26,48 +32,59 @@ void Terrain::calculateLightDir(float time, glm::vec3 &outDir,
 {
     outColor = glm::vec3(1.0f, 1.0f, 0.86f);
     float dirX = std::sin(time) + 0.3f;
-    float dirY = std::cos(time) + sunTime;
     float dirZ = 0.7f;
+    // scale to 0 -> 1
+    float dirY = (std::cos(time) + sunTime) / (1.0f + sunTime);
 
-    // increment moon height
+    // scale to 0 -> -1
     if(dirY < 0.0f)
     {
+        float minimum = (1.0f - sunTime) / (1.0f + sunTime);
+        dirY = dirY / minimum;
         // moon comes from other side
         dirX += std::cos(time);
-        // scale moon height
-        dirY *= moonAltitude;
     }
 
+    // direction Y used for altering the color
     if(enableTimeOfTheDayColorGrading)
     {
-        // day light to dawn light
+        static float dawnTime = sunTime / 2.0f;
+
         if(dirY > dawnTime)
         {
+            float sampleHeight = 1.0 - (dirY - dawnTime) / (1.0f - dawnTime);
             outColor = glm::mix(
                            glm::vec3(1.0f, 1.00f, 0.86f),
                            glm::vec3(0.95f, 0.54f, 0.21f),
-                           1.0f - (dirY - dawnTime) / (1.0f + sunTime - dawnTime)
+                           sampleHeight
                        );
         }
-        // dawn light to night light
-        else if(dirY <= dawnTime && dirY > 0.0f)
+        else if(dirY > 0.0 && dirY <= dawnTime)
         {
+            float sampleHeight = 1.0 - dirY / dawnTime;
             outColor = glm::mix(
                            glm::vec3(0.95f, 0.54f, 0.21f),
-                           glm::vec3(0.21, 0.19, 0.17),
-                           1.0f - dirY / dawnTime
+                           glm::vec3(0.02, 0.03, 0.02),
+                           sampleHeight
                        );
         }
-        // night time
-        else if(dirY <= 0.0f)
+        else if(dirY <= 0.0)
         {
+            float sampleHeight = std::abs(dirY);
             outColor = glm::mix(
-                           glm::vec3(0.21, 0.19, 0.17),
+                           glm::vec3(0.02, 0.03, 0.02),
                            glm::vec3(0.18, 0.21, 0.25),
-                           1.0f - std::abs(dirY) / ((1.0f - sunTime) * moonAltitude)
+                           sampleHeight
                        );
         }
+
+        // light intensity
+        outColor *= 0.79;
     }
+
+    // scale moon and sun altitudes
+    if(dirY > 0.0) dirY *= sunAltitude;
+    else dirY *= moonAltitude;
 
     outDir = glm::vec3(dirX, std::abs(dirY), dirZ);
 }
@@ -77,61 +94,67 @@ float Terrain::heightAt(glm::vec2 position)
     return 0;
 }
 
-void Terrain::display(float time)
+void Terrain::render(float time)
 {
     if(!meshCreated) return;
 
     // reset original state
-    {
-        program.Use();
-        bindBuffers();
-        gl.Enable(Capability::DepthTest);
-        gl.Enable(Capability::CullFace);
-        gl.FrontFace(FaceOrientation::CW);
-        gl.CullFace(Face::Back);
-    }
+    program.Use();
+    //bindBuffers();
+    gl.Enable(Capability::DepthTest);
+    gl.Enable(Capability::CullFace);
+    gl.FrontFace(FaceOrientation::CW);
+    gl.CullFace(Face::Back);
     // set shader uniforms
-    {
-        this->terrainTextures.SetUniforms(program);
-        static glm::vec3 lightColor, lightDir;
-        // lighting calculations
-        calculateLightDir(time * timeScale, lightDir, lightColor);
-        glm::vec4 lightDirectionCameraSpace = TransformationMatrices::View()
-                                              * glm::vec4(lightDir, 0.0f);
-        // lighting
-        Uniform<glm::vec3>(program, "directionalLight.direction").Set(
-            glm::vec3(lightDirectionCameraSpace)
-        );
+    setProgramUniforms(time);
 
-        if(enableTimeOfTheDayColorGrading)
-        {
-            Uniform<glm::vec3>(program, "directionalLight.base.intensities")
-            .Set(lightColor);
-        }
-
-        // set scene matrices uniforms
-        Uniform<glm::mat4>(program, "matrix.modelViewProjection").Set(
-            TransformationMatrices::ModelViewProjection()
-        );
-        Uniform<glm::mat4>(program, "matrix.modelView").Set(
-            TransformationMatrices::ModelView()
-        );
-        Uniform<glm::mat4>(program, "matrix.normal").Set(
-            TransformationMatrices::Normal()
-        );
-        // shader time handler
-        Uniform<GLfloat>(program, "currentLightmap").Set(
-            fmod(time * timeScale, glm::pi<float>() * 2.0f) / (glm::pi<float>() * 2.0f)
-        );
-    }
     // draw mesh
-    gl.DrawElements(
-        PrimitiveType::TriangleStrip,
-        this->indexSize,
-        DataType::UnsignedInt
-    );
+    //gl.DrawElements(
+    //    PrimitiveType::TriangleStrip,
+    //    indexSize,
+    //    DataType::UnsignedInt
+    //);
+    for(int i = 0; i < 32; i++)
+    {
+        for(int j = 0; j < 32; j++)
+        {
+            chunkGenerator.MeshChunk(j, i).bindBuffer(program);
+            chunkGenerator.MeshChunk(j, i).drawElements();
+        }
+    }
 
+    // update lightmap texture once baking done
     if(bakingDone) createTOTD3DTexture();
+}
+
+void Terrain::setProgramUniforms(float time)
+{
+    this->terrainTextures.SetUniforms(program);
+    static glm::vec3 lightColor, lightDir;
+    // lighting calculations
+    calculateLightDir(time * timeScale, lightDir, lightColor);
+    glm::vec4 lightDirectionCameraSpace = TransformationMatrices::View()
+                                          * glm::vec4(lightDir, 0.0f);
+    // lighting
+    Uniform<glm::vec3>(program, "directionalLight.direction").Set(
+        glm::vec3(lightDirectionCameraSpace)
+    );
+    Uniform<glm::vec3>(program, "directionalLight.base.intensities")
+    .Set(lightColor);
+    // set scene matrices uniforms
+    Uniform<glm::mat4>(program, "matrix.modelViewProjection").Set(
+        TransformationMatrices::ModelViewProjection()
+    );
+    Uniform<glm::mat4>(program, "matrix.modelView").Set(
+        TransformationMatrices::ModelView()
+    );
+    Uniform<glm::mat4>(program, "matrix.normal").Set(
+        TransformationMatrices::Normal()
+    );
+    // shader time handler
+    Uniform<GLfloat>(program, "currentLightmap").Set(
+        fmod(time * timeScale, glm::pi<float>() * 2.0f) / (glm::pi<float>() * 2.0f)
+    );
 }
 
 void Terrain::bindBuffers()
@@ -364,6 +387,8 @@ void Terrain::createTerrain(const int heightmapSize,
        && sampleSquare == meshSampleSquare
        && terrainSeed == seed) return;
 
+    if(this->bakingThread.joinable()) this->bakingThread.join();
+
     // terrain unique seed
     this->terrainSeed = seed;
     this->heightmap.setSeed(seed);
@@ -376,7 +401,8 @@ void Terrain::createTerrain(const int heightmapSize,
     heightmap.build();
     // create heightmap texture
     gl.Bound(Texture::Target::_2D, this->heightmapField)
-    .Image2D(0, PixelDataInternalFormat::RGBA
+    // we only need the intensity
+    .Image2D(0, PixelDataInternalFormat::R8
              , terrainResolution, terrainResolution, 0,
              PixelDataFormat::RGBA, PixelDataType::UnsignedByte,
              heightmap.RawImage())
@@ -399,11 +425,11 @@ void Terrain::createMesh(const int meshResExponent)
     if(!heightmapCreated) return;
 
     this->meshResolution = (int)std::pow(2, meshResExponent) + 1;
-    // clear any previous data
-    this->indices.clear();
-    this->vertices.clear();
-    this->texCoords.clear();
-    this->normals.clear();
+    // mesh data collections
+    std::vector<glm::vec3> vertices;
+    std::vector<glm::vec2> texCoords;
+    std::vector<glm::vec3> normals;
+    std::vector<unsigned int> indices;
     // reserve space for new data
     vertices.resize(meshResolution * meshResolution);
     normals.resize(meshResolution * meshResolution);
@@ -569,13 +595,19 @@ void Terrain::createMesh(const int meshResExponent)
         gl.Enable(Capability::PrimitiveRestart);
         gl.PrimitiveRestartIndex(restartIndex);
     }
+    this->indexSize = indices.size();
+    // generate mesh chunk process
+    this->chunkGenerator.generateChunks(
+        vertices, normals, texCoords, meshResExponent, 4
+    );
+    this->chunkGenerator.bindBufferData(this->program);
+    // mesh finally done
     meshCreated = true;
-    // clear data once uploaded to GPU
-    this->indexSize = this->indices.size();
-    this->vertices.clear();
-    this->texCoords.clear();
-    this->normals.clear();
-    this->indices.clear();
+    // clear vector collections once uploaded
+    vertices.clear();
+    normals.clear();
+    texCoords.clear();
+    indices.clear();
 }
 
 void Terrain::bakeLightmaps(float freq, int lightmapSize)
@@ -709,13 +741,13 @@ void Terrain::initialize()
         0
     );
     Uniform<GLfloat>(program, "material.shininess").Set(
-        32
+        8.0f
     );
     Uniform<glm::vec3>(program, "material.specular").Set(
-        glm::vec3(0.2, 0.95, 0.15)
+        glm::vec3(1.0, 0.98, 0.98)
     );
     Uniform<GLfloat>(program, "material.shininessStrength").Set(
-        0.016f
+        0.0375
     );
     Uniform<glm::vec2>(program, "terrainUVScaling").Set(
         glm::vec2(25, 25)
@@ -775,7 +807,6 @@ void Terrain::createTOTD3DTexture()
     gl.Bound(Texture::Target::_3D, this->terrainTOTDLightmap)
     .MinFilter(TextureMinFilter::Linear)
     .MagFilter(TextureMagFilter::Linear)
-    .Anisotropy(2.0f)
     .WrapS(TextureWrap::Repeat)
     .WrapT(TextureWrap::Repeat)
     .Image3D(0, PixelDataInternalFormat::R8, lightmapResolution,
@@ -806,4 +837,12 @@ Terrain::~Terrain()
 
         if(bakingDone) delete[]terrainLightmapsData;
     };
+}
+
+void Terrain::Occlusion(float occlusionStrenght)
+{
+    if(occlusionStrenght < 0.0f) return;
+
+    program.Use();
+    Uniform<float>(program, "occlusionStrength").Set(occlusionStrenght);
 }
