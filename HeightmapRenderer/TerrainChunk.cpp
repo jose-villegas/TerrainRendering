@@ -41,8 +41,7 @@ void TerrainChunk::chooseLoDLevel(Camera &camera)
             glm::vec4(this->center, 1.0f)
             * TransformationMatrices::ModelViewProjection()
         );
-    distanceToEye =
-        glm::distance2(position, App::Instance()->getCamera().Position());
+    distanceToEye = glm::distance2(position, camera.Position());
     float C = getCameraConstant(camera);
     // lowest level by defaul, higher distance
     currentLoD = 2;

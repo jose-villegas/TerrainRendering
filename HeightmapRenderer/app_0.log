@@ -1,31 +1,5 @@
-2015-04-08 21:11:43:1 <info> GLFW 3.1.1 Win32 WGL VisualC
-2015-04-08 21:11:43:2 <info> OpenGL 3.3.11672 Compatibility Profile Contexts, GLSL 3.30
-2015-04-08 21:11:43:3 <info> Boost 1.57.0
-2015-04-08 21:11:43:4 <info> Ocornut's IMGUI 1.38 WIP
-2015-04-08 21:11:43:5 <info> FreeImage 3.17.0
-2015-04-08 21:14:45:6 <info> Baking Info: Lightmap 1/12 (8%) created
-2015-04-08 21:14:45:7 <info> Baking Info: Lightmap 2/12 (16%) created
-2015-04-08 21:14:45:8 <info> Baking Info: Lightmap 3/12 (25%) created
-2015-04-08 21:14:45:9 <info> Baking Info: Lightmap 4/12 (33%) created
-2015-04-08 21:14:45:10 <info> Baking Info: Lightmap 5/12 (41%) created
-2015-04-08 21:14:45:11 <info> Baking Info: Lightmap 6/12 (50%) created
-2015-04-08 21:14:46:12 <info> Baking Info: Lightmap 7/12 (58%) created
-2015-04-08 21:14:46:13 <info> Baking Info: Lightmap 8/12 (66%) created
-2015-04-08 21:14:46:14 <info> Baking Info: Lightmap 9/12 (75%) created
-2015-04-08 21:14:46:15 <info> Baking Info: Lightmap 10/12 (83%) created
-2015-04-08 21:14:46:16 <info> Baking Info: Lightmap 11/12 (91%) created
-2015-04-08 21:14:46:17 <info> Baking Info: Lightmap 12/12 (100%) created
-2015-04-08 21:14:46:18 <info> Baking Done, 12 lightmaps created, 0.5 per hour
-2015-04-08 21:14:53:19 <info> Baking Info: Lightmap 1/12 (8%) created
-2015-04-08 21:14:53:20 <info> Baking Info: Lightmap 2/12 (16%) created
-2015-04-08 21:14:53:21 <info> Baking Info: Lightmap 3/12 (25%) created
-2015-04-08 21:14:53:22 <info> Baking Info: Lightmap 4/12 (33%) created
-2015-04-08 21:14:53:23 <info> Baking Info: Lightmap 5/12 (41%) created
-2015-04-08 21:14:53:24 <info> Baking Info: Lightmap 6/12 (50%) created
-2015-04-08 21:14:53:25 <info> Baking Info: Lightmap 7/12 (58%) created
-2015-04-08 21:14:53:26 <info> Baking Info: Lightmap 8/12 (66%) created
-2015-04-08 21:14:53:27 <info> Baking Info: Lightmap 9/12 (75%) created
-2015-04-08 21:14:53:28 <info> Baking Info: Lightmap 10/12 (83%) created
-2015-04-08 21:14:53:29 <info> Baking Info: Lightmap 11/12 (91%) created
-2015-04-08 21:14:53:30 <info> Baking Info: Lightmap 12/12 (100%) created
-2015-04-08 21:14:53:31 <info> Baking Done, 12 lightmaps created, 0.5 per hour
+2015-04-08 21:22:09:1 <info> GLFW 3.1.1 Win32 WGL VisualC
+2015-04-08 21:22:09:2 <info> OpenGL 3.3.11672 Compatibility Profile Contexts, GLSL 3.30
+2015-04-08 21:22:10:3 <info> Boost 1.57.0
+2015-04-08 21:22:10:4 <info> Ocornut's IMGUI 1.38 WIP
+2015-04-08 21:22:10:5 <info> FreeImage 3.17.0
