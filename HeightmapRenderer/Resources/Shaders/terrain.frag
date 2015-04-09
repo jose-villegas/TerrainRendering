@@ -277,9 +277,9 @@ float terrainOcclusion(vec3 position, vec3 normal, vec2 texCoord, float rayLengt
     float occlusion = 0.0f;
     mat3 orthobasis = mat3(matrix.normal);
 
-    for(int i = 1; i < 33; i++)
+    for(int i = 1; i < 17; i++)
     {
-        float s = float(i) / 32.0f;
+        float s = float(i) / 16.0f;
         float a = sqrt(s * terrainMapSize.x);
         float b = sqrt(s);
         float x = sin(a) * b * rayLength;

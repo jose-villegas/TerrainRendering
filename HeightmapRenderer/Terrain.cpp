@@ -16,8 +16,8 @@ glm::vec3 Terrain::calculateLightDir(float time)
     {
         float minimum = (1.0f - sunTime) / (1.0f + sunTime);
         dirY = dirY / minimum;
-        // moon comes from other side
-        dirX += std::cos(time);
+        // moon comes from other side, slowly
+        dirX += std::cos(time) * 0.25;
     }
 
     // scale moon and sun altitudes
@@ -41,8 +41,8 @@ void Terrain::calculateLightDir(float time, glm::vec3 &outDir,
     {
         float minimum = (1.0f - sunTime) / (1.0f + sunTime);
         dirY = dirY / minimum;
-        // moon comes from other side
-        dirX += std::cos(time);
+        // moon comes from other side, slowly
+        dirX += std::cos(time) * 0.25;
     }
 
     // direction Y used for altering the color
@@ -118,8 +118,7 @@ void Terrain::render(float time)
     {
         for(int j = 0; j < chunkGenerator.ChunkCount(); j++)
         {
-            chunkGenerator.MeshChunk(j, i).bindBuffer(program);
-            chunkGenerator.MeshChunk(j, i).drawElements();
+            chunkGenerator.MeshChunk(j, i).drawElements(program);
         }
     }
 
@@ -129,49 +128,40 @@ void Terrain::render(float time)
 
 void Terrain::setProgramUniforms(float time)
 {
-    this->terrainTextures.SetUniforms(program);
     static glm::vec3 lightColor, lightDir;
+    static glm::vec4 lightDirectionCameraSpace;
+    // terrain multitexture per height
+    this->terrainTextures.SetUniforms(program);
     // lighting calculations
     calculateLightDir(time * timeScale, lightDir, lightColor);
-    glm::vec4 lightDirectionCameraSpace = TransformationMatrices::View()
-                                          * glm::vec4(lightDir, 0.0f);
+    lightDirectionCameraSpace = (TransformationMatrices::View()
+                                 * glm::vec4(lightDir, 0.0f));
     // lighting
-    Uniform<glm::vec3>(program, "directionalLight.direction").Set(
-        glm::vec3(lightDirectionCameraSpace)
-    );
-    Uniform<glm::vec3>(program, "directionalLight.base.intensities")
-    .Set(lightColor);
+    lightDirection.Set(glm::vec3(lightDirectionCameraSpace));
+    lightIntensities.Set(lightColor);
     // set scene matrices uniforms
-    Uniform<glm::mat4>(program, "matrix.modelViewProjection").Set(
-        TransformationMatrices::ModelViewProjection()
-    );
-    Uniform<glm::mat4>(program, "matrix.modelView").Set(
-        TransformationMatrices::ModelView()
-    );
-    Uniform<glm::mat4>(program, "matrix.normal").Set(
-        TransformationMatrices::Normal()
-    );
+    modelViewProjection.Set(TransformationMatrices::ModelViewProjection());
+    modelView.Set(TransformationMatrices::ModelView());
+    normalMatrix.Set(TransformationMatrices::Normal());
     // shader time handler
-    Uniform<GLfloat>(program, "currentLightmap").Set(
-        fmod(time * timeScale, glm::pi<float>() * 2.0f) / (glm::pi<float>() * 2.0f)
-    );
+    currentLightmap.Set(fmod(time * timeScale, 3.14 * 2.0f) / (3.14 * 2.0f));
 }
 
 void Terrain::bindBuffers()
 {
-    buffer[0].Bind(Buffer::Target::Array);
-    {
-        (program | 0).Setup<GLfloat>(3).Enable();
-    }
-    buffer[1].Bind(Buffer::Target::Array);
-    {
-        (program | 1).Setup<GLfloat>(3).Enable();
-    }
-    buffer[2].Bind(Buffer::Target::Array);
-    {
-        (program | 2).Setup<GLfloat>(2).Enable();
-    }
-    buffer[3].Bind(Buffer::Target::ElementArray);
+    //buffer[0].Bind(Buffer::Target::Array);
+    //{
+    //    (program | 0).Setup<GLfloat>(3).Enable();
+    //}
+    //buffer[1].Bind(Buffer::Target::Array);
+    //{
+    //    (program | 1).Setup<GLfloat>(3).Enable();
+    //}
+    //buffer[2].Bind(Buffer::Target::Array);
+    //{
+    //    (program | 2).Setup<GLfloat>(2).Enable();
+    //}
+    //buffer[3].Bind(Buffer::Target::ElementArray);
 }
 
 void Terrain::fastGenerateShadowmapParallel(glm::vec3 lightDir,
@@ -566,35 +556,35 @@ void Terrain::createMesh(const int meshResExponent)
         }
     });
     // upload position data to the gpu
-    buffer[0].Bind(Buffer::Target::Array);
-    {
-        GLuint nPerVertex = glm::vec3().length();
-        Buffer::Data(Buffer::Target::Array, vertices);
-        // setup the vertex attribs array for the vertices
-        (program | 0).Setup<GLfloat>(nPerVertex).Enable();
-    }
-    buffer[1].Bind(Buffer::Target::Array);
-    {
-        GLuint nPerVertex = glm::vec3().length();
-        // upload the data
-        Buffer::Data(Buffer::Target::Array, normals);
-        // setup the vertex attribs array for the vertices
-        (program | 1).Setup<GLfloat>(nPerVertex).Enable();
-    }
-    buffer[2].Bind(Buffer::Target::Array);
-    {
-        GLuint nPerVertex = glm::vec2().length();
-        // upload the data
-        Buffer::Data(Buffer::Target::Array, texCoords);
-        // setup the vertex attribs array for the vertices
-        (program | 2).Setup<GLfloat>(nPerVertex).Enable();
-    }
-    buffer[3].Bind(Buffer::Target::ElementArray);
-    {
-        Buffer::Data(Buffer::Target::ElementArray, indices);
-        gl.Enable(Capability::PrimitiveRestart);
-        gl.PrimitiveRestartIndex(restartIndex);
-    }
+    //buffer[0].Bind(Buffer::Target::Array);
+    //{
+    //    GLuint nPerVertex = glm::vec3().length();
+    //    Buffer::Data(Buffer::Target::Array, vertices);
+    //    // setup the vertex attribs array for the vertices
+    //    (program | 0).Setup<GLfloat>(nPerVertex).Enable();
+    //}
+    //buffer[1].Bind(Buffer::Target::Array);
+    //{
+    //    GLuint nPerVertex = glm::vec3().length();
+    //    // upload the data
+    //    Buffer::Data(Buffer::Target::Array, normals);
+    //    // setup the vertex attribs array for the vertices
+    //    (program | 1).Setup<GLfloat>(nPerVertex).Enable();
+    //}
+    //buffer[2].Bind(Buffer::Target::Array);
+    //{
+    //    GLuint nPerVertex = glm::vec2().length();
+    //    // upload the data
+    //    Buffer::Data(Buffer::Target::Array, texCoords);
+    //    // setup the vertex attribs array for the vertices
+    //    (program | 2).Setup<GLfloat>(nPerVertex).Enable();
+    //}
+    //buffer[3].Bind(Buffer::Target::ElementArray);
+    //{
+    //    Buffer::Data(Buffer::Target::ElementArray, indices);
+    //    gl.Enable(Capability::PrimitiveRestart);
+    //    gl.PrimitiveRestartIndex(restartIndex);
+    //}
     this->indexSize = indices.size();
     // generate mesh chunk process
     this->chunkGenerator.generateChunks(
@@ -723,6 +713,20 @@ void Terrain::initialize()
     // link and use it
     program.Link();
     program.Use();
+    // bound commonly used uniforms
+    this->lightDirection.Assign(program);
+    this->lightIntensities.Assign(program);
+    this->currentLightmap.Assign(program);
+    this->modelViewProjection.Assign(program);
+    this->modelView.Assign(program);
+    this->normalMatrix.Assign(program);
+    // bound commonly used uniforms
+    this->lightDirection.BindTo("directionalLight.direction");
+    this->lightIntensities.BindTo("directionalLight.base.intensities");
+    this->currentLightmap.BindTo("currentLightmap");
+    this->modelViewProjection.BindTo("matrix.modelViewProjection");
+    this->normalMatrix.BindTo("matrix.normal");
+    this->modelView.BindTo("matrix.modelView");
     // set prog uniforms
     Uniform<glm::vec3>(program, "directionalLight.base.intensities").Set(
         // full sunlight

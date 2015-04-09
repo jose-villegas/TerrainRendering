@@ -12,10 +12,13 @@
 // ogl headers c++ wrapper on opengl
 #include <oglplus/all.hpp>
 #include <oglplus/opt/smart_enums.hpp>
+#include <oglplus/shapes/cube.hpp>
 #include <oglplus/bound/texture.hpp>
 #include <oglplus/buffer_usage.hpp>
 #include <oglplus/glsl_source.hpp>
 #include <oglplus/glsl_string.hpp>
+#include <oglplus/object/array.hpp>
+#include <oglplus/object/group.hpp>
 #include <oglplus/interop/glm.hpp>
 // coherent noise generation
 #include <noise/noise.h>
@@ -59,6 +62,7 @@
 #include <boost/log/sources/record_ostream.hpp>
 #include <boost/log/support/date_time.hpp>
 #include <boost/algorithm/clamp.hpp>
+#include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/format.hpp>
 // ui library imgui (inmediate mode gui)
 #include "ImGui/imgui.h"

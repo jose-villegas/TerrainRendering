@@ -6,6 +6,14 @@ using namespace oglplus;
 
 class Terrain
 {
+    private:
+        // terrain shader uniforms used in the render loop
+        Uniform<glm::vec3> lightDirection;
+        Uniform<glm::vec3> lightIntensities;
+        Uniform<glm::mat4> modelViewProjection;
+        Uniform<glm::mat4> modelView;
+        Uniform<glm::mat4> normalMatrix;
+        Uniform<GLfloat> currentLightmap;
     public:
         TerrainChunksGenerator chunkGenerator;
         // represents the amount of time on daylight
@@ -122,8 +130,10 @@ class Terrain
 
         // mesh vertical scaling
         void HeightScale(float val);
+        float HeightScale() const { return this->heightScale; };
         // mesh horizontal scaling (scales x and z)
         void TerrainHorizontalScale(float val);
+        float TerrainHorizontalScale() const { return this->terrainHorizontalScale; };
 
         // saves terrain data to a bmp greyscale file
         void saveTerrainToFile(const std::string &filename);

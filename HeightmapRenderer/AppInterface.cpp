@@ -241,7 +241,7 @@ void AppInterface::draw(float time)
         }
         // shadow map
         {
-            ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x - 146, 3));
+            ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x - 148, 3));
             ImGui::SetNextWindowCollapsed(true, ImGuiSetCond_Once);
 
             if(ImGui::Begin("Light Map", nullptr,

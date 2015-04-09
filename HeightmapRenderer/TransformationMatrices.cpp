@@ -1,5 +1,6 @@
 #include "Commons.h"
 #include "TransformationMatrices.h"
+#include "App.h"
 
 bool TransformationMatrices::modelMatrixChanged = false;
 bool TransformationMatrices::projectionMatrixChanged = false;
@@ -15,6 +16,9 @@ glm::mat4 TransformationMatrices::modelViewProjection = glm::mat4(1);
 const glm::mat4 & TransformationMatrices::ModelViewProjection()
 {
     modelViewProjection = projection * view * model;
+    // update frustum planes
+    // App::Instance()->getCamera().calcPlanes(modelViewProjection);
+    // return new matrix
     return modelViewProjection;
 }
 

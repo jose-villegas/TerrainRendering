@@ -2,6 +2,7 @@
 #include "MainWindow.h"
 #include "Terrain.h"
 #include "AppInterface.h"
+#include "Camera.h"
 
 class App
 {
@@ -11,6 +12,7 @@ class App
         static bool wireframeMode;
 
         MainWindow * appWindow;
+        Camera camera;
         Terrain terrain;
         AppInterface gui;
 
@@ -30,6 +32,7 @@ class App
         static App * Instance();
         void Run();
         Terrain &getTerrain() { return terrain; }
+        Camera &getCamera() { return camera; }
 
         ~App();
 };

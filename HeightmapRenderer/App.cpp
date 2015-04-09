@@ -27,12 +27,10 @@ void App::onKeyPress(GLFWwindow *window, int key, int scancode, int action,
 void App::onWindowResize(GLFWwindow *window, int width, int height)
 {
     gl.Viewport(width, height);
-    TransformationMatrices::Projection(
-        glm::perspective(
-            glm::radians(60.0f),
-            (float)width / height,
-            0.1f, 500.0f
-        )
+    App::instance->camera.perspective(
+        glm::radians(60.0f),
+        width, height,
+        0.1f, 500.0f
     );
 }
 
@@ -157,13 +155,7 @@ void App::Start()
 
     terrain.initialize();
     // set view / camera matrix
-    TransformationMatrices::View(
-        glm::lookAt(
-            glm::vec3(0.0, 5.0, 10.0),
-            glm::vec3(0.0, 0.0, 0.0),
-            glm::vec3(0.0, 1.0, 0.0)
-        )
-    );
+    camera.lookAt(glm::vec3(0, 5, 10), glm::vec3(0));
     float time = 0.0f;
     // new seed for rand
     std::srand(std::time(nullptr));
@@ -178,17 +170,6 @@ void App::Start()
         glfwPollEvents();
         // draw the user interface
         gui.draw(time);
-        TransformationMatrices::View(
-            glm::lookAt(
-                glm::vec3(
-                    std::sin(glfwGetTime() * 0.05) * 10.0,
-                    5.0,
-                    std::cos(glfwGetTime() * 0.05) * 10.0
-                ),
-                glm::vec3(0.0, 0.0, 0.0),
-                glm::vec3(0, 1, 0)
-            )
-        );
         // render terrain
         terrain.render(time);
         // render user interface

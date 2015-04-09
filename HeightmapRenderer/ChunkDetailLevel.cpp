@@ -3,6 +3,8 @@
 
 void ChunkDetailLevel::generateDetailLevels(int meshSize, int chunkSize)
 {
+    this->meshSize = meshSize;
+    this->chunkSize = chunkSize;
     restartIndexToken = meshSize * meshSize;
 
     for(int lodLevel = 0; lodLevel < 3; lodLevel++)
@@ -48,13 +50,13 @@ void ChunkDetailLevel::bindBufferData()
 
 void ChunkDetailLevel::bindBuffer(int levelOfDetail)
 {
+    levelOfDetail = std::min(std::max(0, levelOfDetail), 2);
     indicesBuffer[levelOfDetail].Bind(Buffer::Target::ElementArray);
 }
 
 int ChunkDetailLevel::indicesSize(int levelOfDetail)
 {
-    if(levelOfDetail < 0 || levelOfDetail >= 3) return -1;
-
+    levelOfDetail = std::min(std::max(0, levelOfDetail), 2);
     return indexSizes[levelOfDetail];
 }
 

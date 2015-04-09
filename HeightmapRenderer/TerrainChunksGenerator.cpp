@@ -36,9 +36,8 @@ void TerrainChunksGenerator::generateChunks(std::vector<glm::vec3>
     // delete previous chunks and reserve memory for new ones
     deleteMeshChunks();
     this->meshChunks.resize(chunkCount);
-    // create lod controller
+    // create lod controller levels
     chunkDetail.generateDetailLevels(meshSize, chunkSize);
-    chunkDetail.bindBufferData();
 
     for(int y = 0; y < chunkCount; y++)
     {
@@ -60,15 +59,21 @@ void TerrainChunksGenerator::generateChunks(std::vector<glm::vec3>
                 }
             }
 
+            // get maximim height for current chunk
+            auto it = std::max_element(chunkVertices.begin(), chunkVertices.end(),
+                                       [](const glm::vec3 & x, const glm::vec3 & y)
+            {
+                return x.y < y.y;
+            });
             this->meshChunks[y].push_back(
-                new TerrainChunk(chunkVertices, chunkNormals, chunkTexCoords)
+                new TerrainChunk(
+                    chunkVertices, chunkNormals, chunkTexCoords, &chunkDetail, it->y
+                )
             );
-            // setting this once is enough since the variable is shared
-            // but we assign it to every meshChunk anyway
-            this->meshChunks[y].back()->chunkLod = &chunkDetail;
         }
     }
 
+    chunkDetail.bindBufferData();
     // we don't need these collections anymore
     this->vertices.clear();
     this->texCoords.clear();

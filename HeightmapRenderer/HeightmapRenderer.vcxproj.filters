@@ -63,6 +63,12 @@
     <ClCompile Include="ChunkDetailLevel.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="TerrainQuadtree.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Camera.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MainWindow.h">
@@ -110,13 +116,29 @@
     <ClInclude Include="ChunkDetailLevel.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="TerrainQuadtree.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Camera.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Resources\Shaders\phong.vert" />
-    <None Include="Resources\Shaders\phong.frag" />
-    <None Include="Resources\Shaders\terrain.vert" />
-    <None Include="Resources\Shaders\terrain.frag" />
-    <None Include="Resources\Shaders\base.frag" />
+    <None Include="Resources\Shaders\base.frag">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="Resources\Shaders\phong.frag">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="Resources\Shaders\phong.vert">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="Resources\Shaders\terrain.frag">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="Resources\Shaders\terrain.vert">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Text Include="app_0.log" />
