@@ -11,6 +11,7 @@ class TransformationMatrices
         static glm::mat4 normal;
         static glm::mat4 modelView;
         static glm::mat4 modelViewProjection;
+        static glm::mat4 viewProjection;
     public:
         static const glm::mat4 &Projection() { return projection; };
         static const glm::mat4 &View() { return view; };

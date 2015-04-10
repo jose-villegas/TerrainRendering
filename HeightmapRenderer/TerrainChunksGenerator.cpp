@@ -60,14 +60,19 @@ void TerrainChunksGenerator::generateChunks(std::vector<glm::vec3>
             }
 
             // get maximim height for current chunk
-            auto it = std::max_element(chunkVertices.begin(), chunkVertices.end(),
-                                       [](const glm::vec3 & x, const glm::vec3 & y)
+            float chunkMaxHeight = 0.0f;
+            float chunkMinHeight = 1.0f;
+
+            for each(glm::vec3 vertex in chunkVertices)
             {
-                return x.y < y.y;
-            });
+                chunkMaxHeight = vertex.y > chunkMaxHeight ? vertex.y : chunkMaxHeight;
+                chunkMinHeight = vertex.y < chunkMinHeight ? vertex.y : chunkMinHeight;
+            }
+
             this->meshChunks[y].push_back(
                 new TerrainChunk(
-                    chunkVertices, chunkNormals, chunkTexCoords, &chunkDetail, it->y
+                    chunkVertices, chunkNormals, chunkTexCoords,
+                    &chunkDetail, chunkMaxHeight, chunkMinHeight
                 )
             );
         }

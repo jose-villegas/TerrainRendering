@@ -1,5 +1,7 @@
 #include "Commons.h"
 #include "ChunkDetailLevel.h"
+// pixel error, shared among all chunks
+float ChunkDetailLevel::threeshold = 0.35;
 
 void ChunkDetailLevel::generateDetailLevels(int meshSize, int chunkSize)
 {
@@ -48,16 +50,15 @@ void ChunkDetailLevel::bindBufferData()
     gl.PrimitiveRestartIndex(restartIndexToken);
 }
 
-void ChunkDetailLevel::bindBuffer(int levelOfDetail)
+void ChunkDetailLevel::bindBuffer(LodLevel levelOfDetail)
 {
-    levelOfDetail = std::min(std::max(0, levelOfDetail), 2);
-    indicesBuffer[levelOfDetail].Bind(Buffer::Target::ElementArray);
+    indicesBuffer[std::min(std::max(0, (int)levelOfDetail), 2)]
+    .Bind(Buffer::Target::ElementArray);
 }
 
-int ChunkDetailLevel::indicesSize(int levelOfDetail)
+int ChunkDetailLevel::indicesSize(LodLevel levelOfDetail)
 {
-    levelOfDetail = std::min(std::max(0, levelOfDetail), 2);
-    return indexSizes[levelOfDetail];
+    return indexSizes[std::min(std::max(0, (int)levelOfDetail), 2)];
 }
 
 ChunkDetailLevel::ChunkDetailLevel()

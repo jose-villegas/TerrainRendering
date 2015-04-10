@@ -12,12 +12,14 @@ glm::mat4 TransformationMatrices::projection = glm::mat4(1);
 glm::mat4 TransformationMatrices::normal = glm::mat4(1);
 glm::mat4 TransformationMatrices::modelView = glm::mat4(1);
 glm::mat4 TransformationMatrices::modelViewProjection = glm::mat4(1);
+glm::mat4 TransformationMatrices::viewProjection = glm::mat4(1);
 
 const glm::mat4 & TransformationMatrices::ModelViewProjection()
 {
-    modelViewProjection = projection * view * model;
+    viewProjection = projection * view;
     // update frustum planes
-    // App::Instance()->getCamera().calcPlanes(modelViewProjection);
+    App::Instance()->getCamera().calcPlanes(viewProjection);
+    modelViewProjection = viewProjection * model;
     // return new matrix
     return modelViewProjection;
 }

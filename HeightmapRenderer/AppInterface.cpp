@@ -28,12 +28,12 @@ void AppInterface::draw(float time)
             ImGui::SliderInt("Map Resolution", &heightmapResolution, 5, 11,
                              std::to_string((int)std::pow(2, heightmapResolution)).c_str());
 
-            if(ImGui::SliderFloat("Maximum Height", &maxHeight, 0.001f, 15.0f))
+            if(ImGui::InputFloat("Maximum Height", &maxHeight, 0.001f, 0.2f))
             {
                 App::Instance()->getTerrain().HeightScale(maxHeight);
             }
 
-            if(ImGui::InputFloat("Terrain Scale", &terrainScale, 0.01, 0.1))
+            if(ImGui::InputFloat("Terrain Scale", &terrainScale, 0.01, 1.0))
             {
                 App::Instance()->getTerrain().TerrainHorizontalScale(terrainScale);
             }
@@ -42,15 +42,16 @@ void AppInterface::draw(float time)
             ImGui::InputInt("Seed", &terrainSeed);
             ImGui::SameLine();
             ImGui::Checkbox("Random", &useRandom);
-            ImGui::InputInt2("##lbk", lightmapFreq);
+            ImGui::InputInt2("##lbk", lightmapFreqAndSize);
             ImGui::SameLine();
             // set proper ranges
-            lightmapFreq[0] = std::max(1, lightmapFreq[0]);
-            lightmapFreq[1] = std::min(std::max(4, lightmapFreq[1]), 4096);
+            lightmapFreqAndSize[0] = std::max(1, lightmapFreqAndSize[0]);
+            lightmapFreqAndSize[1] = std::min(std::max(4, lightmapFreqAndSize[1]), 4096);
 
             if(ImGui::Button("Bake Lightmaps"))
             {
-                App::Instance()->getTerrain().bakeLightmaps(lightmapFreq[0], lightmapFreq[1]);
+                App::Instance()->getTerrain().bakeLightmaps(lightmapFreqAndSize[0],
+                        lightmapFreqAndSize[1]);
             }
 
             if(ImGui::Button("Generate Terrain"))
@@ -136,15 +137,35 @@ void AppInterface::draw(float time)
                 App::Instance()->getTerrain().Occlusion(occlusionStrenght);
             }
 
+            if(ImGui::Checkbox("Enable Geomipmapping", &geomipmapping))
+            {
+                App::Instance()->getTerrain().useLoDChunks = geomipmapping;
+            }
+
+            if(geomipmapping)
+            {
+                ImGui::Text("Pixel Error Threeshold");
+
+                if(ImGui::InputFloat("##ett", &geoThreeshold, 0.00001, 0.1, 10))
+                {
+                    ChunkDetailLevel::Threeshold(geoThreeshold);
+                    this->geoThreeshold = std::max(0.0f, geoThreeshold);
+                }
+
+                if(ImGui::Checkbox("Show Bounding Boxes", &this->showBBoxes))
+                {
+                    TerrainChunk::DrawBoundingBoxes(showBBoxes);
+                }
+
+                if(ImGui::Checkbox("Frustum Culling", &frustumCulling))
+                {
+                    TerrainChunk::EnableFrustumCulling(frustumCulling);
+                }
+            }
+
             ImGui::Checkbox("Pause", &pauseTime);
             // always positive
             timeScale = std::max(0.0f, timeScale);
-
-            if(wireframeMode)
-            {
-                gl.PolygonMode(Face::FrontAndBack, PolygonMode::Line);
-            }
-
             stackedSize.y += ImGui::GetWindowSize().y;
             ImGui::End();
         }
@@ -276,6 +297,11 @@ void AppInterface::draw(float time)
             ImGui::End();
         }
     }
+
+    if(wireframeMode)
+    {
+        gl.PolygonMode(Face::FrontAndBack, PolygonMode::Line);
+    }
 }
 
 void AppInterface::render()
@@ -300,12 +326,16 @@ AppInterface::AppInterface()
     this->terrainScale = 15.f;
     this->meshResolution = 8;
     this->heightmapResolution = 8;
+    this->useRandom = true;
     this->textureRepeat[0] = this->textureRepeat[1] = 25.0f;
     this->timeScale = 0.1f;
     this->colorGrading = true;
-    this->lightmapFreq[0] = 12;
-    this->lightmapFreq[1] = 256;
+    this->lightmapFreqAndSize[0] = 384;
+    this->lightmapFreqAndSize[1] = 256;
     this->terrainRange[2] = 5.0f;
+    this->geoThreeshold = ChunkDetailLevel::Threeshold();
+    this->frustumCulling = TerrainChunk::EnableFrustumCulling();
+    this->showBBoxes = TerrainChunk::DrawingBoundingBoxes();
 
     for(int i = 0; i < 4; i++)
     {

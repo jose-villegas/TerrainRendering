@@ -16,6 +16,7 @@ class Terrain
         Uniform<GLfloat> currentLightmap;
     public:
         TerrainChunksGenerator chunkGenerator;
+        bool useLoDChunks = false;
         // represents the amount of time on daylight
         const float sunTime = 0.6f;
         // scales moon height and nightlight

@@ -4,7 +4,6 @@
 #include "Terrain.h"
 
 App * App::instance = nullptr;
-bool App::wireframeMode = false;
 
 App::App() : appWindow(CreateContext())
 {
@@ -22,6 +21,25 @@ void App::onKeyPress(GLFWwindow *window, int key, int scancode, int action,
     {
         glfwSetWindowShouldClose(window, GL_TRUE);
     }
+
+    // f key enables free camera mode
+    if(key == GLFW_KEY_F && action == GLFW_PRESS)
+    {
+        instance->moveAround = !instance->moveAround;
+    }
+}
+
+void App::onMouseWheel(GLFWwindow *window, double xoffset, double yoffset)
+{
+    static float zoom = 0.0f;
+    zoom += (float)yoffset / 4.0f;
+    zoom = std::max(0.0f, zoom);
+    instance->camera.perspective(
+        glm::radians(60.0f - 5.0f * zoom),
+        instance->appWindow->windowWidth(),
+        instance->appWindow->windowHeight(),
+        0.1, 500.f
+    );
 }
 
 void App::onWindowResize(GLFWwindow *window, int width, int height)
@@ -43,9 +61,12 @@ void App::Configure()
     // set app callbacks
     glfwSetKeyCallback(this->appWindow->getWindow(), App::onKeyPress);
     glfwSetWindowSizeCallback(this->appWindow->getWindow(), App::onWindowResize);
-    App::onWindowResize(this->appWindow->getWindow(),
-                        this->appWindow->windowWidth(),
-                        this->appWindow->windowHeight());
+    glfwSetScrollCallback(this->appWindow->getWindow(), App::onMouseWheel);
+    App::onWindowResize(
+        this->appWindow->getWindow(),
+        this->appWindow->windowWidth(),
+        this->appWindow->windowHeight()
+    );
     //setup logging to file
     logging::add_file_log
     (
@@ -159,15 +180,34 @@ void App::Start()
     float time = 0.0f;
     // new seed for rand
     std::srand(std::time(nullptr));
+    App::Instance()->getTerrain().createTerrain(
+        (int)std::pow(2, 8),
+        glm::vec3(0, 0, 5), 0
+    );
+    App::Instance()->getTerrain().createMesh(8);
 
     while(!glfwWindowShouldClose(this->appWindow->getWindow()))
     {
         if(!gui.pauseTime) time += ImGui::GetIO().DeltaTime;
 
+        //camera.lookAt(
+        //    glm::vec3(
+        //        std::sin(glfwGetTime() * 0.075) * 15.0,
+        //        5.0,
+        //        std::cos(glfwGetTime() * 0.075) * 5.0
+        //    ),
+        //    glm::vec3(0.0, 0.0, 0.0),
+        //    glm::vec3(0, 1, 0)
+        //);
         // clean color and depth buff
         gl.Clear().ColorBuffer().DepthBuffer(); glClear(GL_COLOR_BUFFER_BIT);
         // poll input events
         glfwPollEvents();
+        // app specific input handling
+        handleUserInput(
+            this->appWindow->getWindow(),
+            ImGui::GetIO().DeltaTime
+        );
         // draw the user interface
         gui.draw(time);
         // render terrain
@@ -177,6 +217,89 @@ void App::Start()
         // swap double buffer
         glfwSwapBuffers(this->appWindow->getWindow());
     }
+}
+
+void App::handleUserInput(GLFWwindow * window, float deltaTime)
+{
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+    static glm::vec3 position = glm::vec3(0, 5, 10), direction, right, up;
+    static float horizontalAngle = 3.14f;
+    static float verticalAngle = 0.0f;
+    static float speed = 1.5f;
+    static float mouseSpeed = 0.05f;
+    static double xpos, ypos;
+    static float halfWidth, halfHeight;
+
+    if(!moveAround) return;
+
+    // get window width and height
+    halfWidth = (float)this->appWindow->windowWidth() / 2.0f;
+    halfHeight = (float)this->appWindow->windowHeight() / 2.0f;
+    glfwGetCursorPos(window, &xpos, &ypos);
+    // reset mouse position
+    glfwSetCursorPos(
+        window,
+        halfWidth,
+        halfHeight
+    );
+    // Compute new orientation
+    horizontalAngle += mouseSpeed * deltaTime * (halfWidth - xpos);
+    verticalAngle += mouseSpeed * deltaTime * (halfHeight - ypos);
+    // direction, spherical coords to cartesian coords
+    direction =
+        glm::vec3(
+            std::cos(verticalAngle) * std::sin(horizontalAngle),
+            std::sin(verticalAngle),
+            std::cos(verticalAngle) * std::cos(horizontalAngle)
+        );
+    // right vector
+    right =
+        glm::vec3(
+            std::sin(horizontalAngle - 3.14f / 2.0f),
+            0.0f,
+            std::cos(horizontalAngle - 3.14f / 2.0f)
+        );
+    // up vector
+    up = glm::cross(right, direction);
+
+    // forward
+    if(glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+    {
+        position += direction * deltaTime * speed;
+    }
+
+    // backward
+    if(glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+    {
+        position -= direction * deltaTime * speed;
+    }
+
+    // right strafe
+    if(glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+    {
+        position += right * deltaTime * speed;
+    }
+
+    // left strafe
+    if(glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+    {
+        position -= right * deltaTime * speed;
+    }
+
+    // speed increase
+    if(glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
+    {
+        speed += 0.25;
+    }
+
+    // speed decrease
+    if(glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+    {
+        speed -= 0.25;
+    }
+
+    // new camera position
+    this->camera.lookAt(position, position + direction, up);
 }
 
 void App::Run()

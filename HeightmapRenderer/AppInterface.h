@@ -3,7 +3,7 @@
 
 class AppInterface
 {
-    private:
+    public:
         float maxHeight;
         int meshResolution;
         int heightmapResolution;
@@ -15,14 +15,16 @@ class AppInterface
         float textureRepeat[2];
         bool colorGrading;
         float timeScale;
-
-    public:
         bool pauseTime;
-        int lightmapFreq[2];
+        int lightmapFreqAndSize[2];
         int terrainSeed;
         bool terrainSeedSet;
         bool useRandom;
         int occlusionStrenght;
+        bool geomipmapping;
+        float geoThreeshold;
+        bool showBBoxes;
+        bool frustumCulling;
         void initialize(GLFWwindow * window);
         void draw(float time);
         void render();

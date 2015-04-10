@@ -38,8 +38,10 @@ class TerrainChunk
         // debug drawing
         static bool debugMode;
         static BoundingBox * chunkBBox;
+        // trapezoid - cube culling per chunk
+        static bool enableFrustumCulling;
         // bounding box position and dimension
-        glm::vec2 position;
+        glm::vec3 position;
         glm::vec3 dimension;
     private:
         friend class TerrainChunksGenerator;
@@ -52,9 +54,7 @@ class TerrainChunk
         // lod level calculations members
         float distanceToEye;
         // chunk lod level
-        int currentLoD;
-        // thresshold t_
-        static float threeshold;
+        ChunkDetailLevel::LodLevel currentLoD;
         // height change between lod levels per chunk
         std::array<float, 2> heightChange;
         // defines the distance for selecting the lod level
@@ -75,18 +75,23 @@ class TerrainChunk
                      std::vector<glm::vec3> & normals,
                      std::vector<glm::vec2> & texCoords,
                      ChunkDetailLevel * chunkLod,
-                     float maxHeight);
+                     float maxHeight, float minHeight);
         // chunk num vertices = chunkSizeExponent ^ 2 + 1
         ~TerrainChunk() {};
         void bindBufferData(Program &program);
         // calls glDrawElements with the current lod level indices
         void drawElements(Program &program);
         // calculates appropiate lod level
-        void chooseLoDLevel(Camera &camera);
+        void chooseLoDLevel(Camera &camera, const glm::vec3 & position);
         // returns the C constant for geomipmapping
         float getCameraConstant(Camera &camera);
         // generated geometric height changes for geomipmapping (d)
         void generatedEntropies();
-
+        // render bboxes
+        static void DrawBoundingBoxes(bool val) { debugMode = val; }
+        static bool DrawingBoundingBoxes() { return debugMode; }
+        // culls the chunk bounding boxes with the frustum trapezoid
+        static bool EnableFrustumCulling() { return enableFrustumCulling; }
+        static void EnableFrustumCulling(bool val) { enableFrustumCulling = val; }
 };
 

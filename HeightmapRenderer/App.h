@@ -9,12 +9,14 @@ class App
     private:
         static oglplus::Context gl;
         static App *instance;
-        static bool wireframeMode;
+        bool moveAround = false;
 
         MainWindow * appWindow;
         Camera camera;
         Terrain terrain;
         AppInterface gui;
+
+        void handleUserInput(GLFWwindow * window, float deltaTime);
 
         App(const App &rhs);
         App();
@@ -22,6 +24,7 @@ class App
         static void onError(int code, const char * description);
         static void onKeyPress(GLFWwindow *window, int key, int scancode, int action,
                                int mods);
+        static void onMouseWheel(GLFWwindow *window, double xoffset, double yoffset);
         static void onWindowResize(GLFWwindow *window, int width, int height);
         // app libraries configuration
         void Configure();
@@ -33,6 +36,7 @@ class App
         void Run();
         Terrain &getTerrain() { return terrain; }
         Camera &getCamera() { return camera; }
+        AppInterface &Gui() { return gui; }
 
         ~App();
 };

@@ -100,7 +100,6 @@ void Terrain::render(float time)
 
     // reset original state
     program.Use();
-    //bindBuffers();
     gl.Enable(Capability::DepthTest);
     gl.Enable(Capability::CullFace);
     gl.FrontFace(FaceOrientation::CW);
@@ -108,18 +107,26 @@ void Terrain::render(float time)
     // set shader uniforms
     setProgramUniforms(time);
 
-    // draw mesh
-    //gl.DrawElements(
-    //    PrimitiveType::TriangleStrip,
-    //    indexSize,
-    //    DataType::UnsignedInt
-    //);
-    for(int i = 0; i < chunkGenerator.ChunkCount(); i++)
+    if(this->useLoDChunks)
     {
-        for(int j = 0; j < chunkGenerator.ChunkCount(); j++)
+        for(int i = 0; i < chunkGenerator.ChunkCount(); i++)
         {
-            chunkGenerator.MeshChunk(j, i).drawElements(program);
+            for(int j = 0; j < chunkGenerator.ChunkCount(); j++)
+            {
+                chunkGenerator.MeshChunk(j, i).DrawingBoundingBoxes() ? program.Use() : 0;
+                chunkGenerator.MeshChunk(j, i).drawElements(program);
+            }
         }
+    }
+    else
+    {
+        bindBuffers();
+        // draw mesh
+        gl.DrawElements(
+            PrimitiveType::TriangleStrip,
+            indexSize,
+            DataType::UnsignedInt
+        );
     }
 
     // update lightmap texture once baking done
@@ -149,19 +156,19 @@ void Terrain::setProgramUniforms(float time)
 
 void Terrain::bindBuffers()
 {
-    //buffer[0].Bind(Buffer::Target::Array);
-    //{
-    //    (program | 0).Setup<GLfloat>(3).Enable();
-    //}
-    //buffer[1].Bind(Buffer::Target::Array);
-    //{
-    //    (program | 1).Setup<GLfloat>(3).Enable();
-    //}
-    //buffer[2].Bind(Buffer::Target::Array);
-    //{
-    //    (program | 2).Setup<GLfloat>(2).Enable();
-    //}
-    //buffer[3].Bind(Buffer::Target::ElementArray);
+    buffer[0].Bind(Buffer::Target::Array);
+    {
+        (program | 0).Setup<GLfloat>(3).Enable();
+    }
+    buffer[1].Bind(Buffer::Target::Array);
+    {
+        (program | 1).Setup<GLfloat>(3).Enable();
+    }
+    buffer[2].Bind(Buffer::Target::Array);
+    {
+        (program | 2).Setup<GLfloat>(2).Enable();
+    }
+    buffer[3].Bind(Buffer::Target::ElementArray);
 }
 
 void Terrain::fastGenerateShadowmapParallel(glm::vec3 lightDir,
@@ -409,8 +416,6 @@ void Terrain::createTerrain(const int heightmapSize,
 
 void Terrain::createMesh(const int meshResExponent)
 {
-    using namespace  boost::algorithm;
-
     // will not create a mesh until height data is ready
     if(!heightmapCreated) return;
 
@@ -556,35 +561,35 @@ void Terrain::createMesh(const int meshResExponent)
         }
     });
     // upload position data to the gpu
-    //buffer[0].Bind(Buffer::Target::Array);
-    //{
-    //    GLuint nPerVertex = glm::vec3().length();
-    //    Buffer::Data(Buffer::Target::Array, vertices);
-    //    // setup the vertex attribs array for the vertices
-    //    (program | 0).Setup<GLfloat>(nPerVertex).Enable();
-    //}
-    //buffer[1].Bind(Buffer::Target::Array);
-    //{
-    //    GLuint nPerVertex = glm::vec3().length();
-    //    // upload the data
-    //    Buffer::Data(Buffer::Target::Array, normals);
-    //    // setup the vertex attribs array for the vertices
-    //    (program | 1).Setup<GLfloat>(nPerVertex).Enable();
-    //}
-    //buffer[2].Bind(Buffer::Target::Array);
-    //{
-    //    GLuint nPerVertex = glm::vec2().length();
-    //    // upload the data
-    //    Buffer::Data(Buffer::Target::Array, texCoords);
-    //    // setup the vertex attribs array for the vertices
-    //    (program | 2).Setup<GLfloat>(nPerVertex).Enable();
-    //}
-    //buffer[3].Bind(Buffer::Target::ElementArray);
-    //{
-    //    Buffer::Data(Buffer::Target::ElementArray, indices);
-    //    gl.Enable(Capability::PrimitiveRestart);
-    //    gl.PrimitiveRestartIndex(restartIndex);
-    //}
+    buffer[0].Bind(Buffer::Target::Array);
+    {
+        GLuint nPerVertex = glm::vec3().length();
+        Buffer::Data(Buffer::Target::Array, vertices);
+        // setup the vertex attribs array for the vertices
+        (program | 0).Setup<GLfloat>(nPerVertex).Enable();
+    }
+    buffer[1].Bind(Buffer::Target::Array);
+    {
+        GLuint nPerVertex = glm::vec3().length();
+        // upload the data
+        Buffer::Data(Buffer::Target::Array, normals);
+        // setup the vertex attribs array for the vertices
+        (program | 1).Setup<GLfloat>(nPerVertex).Enable();
+    }
+    buffer[2].Bind(Buffer::Target::Array);
+    {
+        GLuint nPerVertex = glm::vec2().length();
+        // upload the data
+        Buffer::Data(Buffer::Target::Array, texCoords);
+        // setup the vertex attribs array for the vertices
+        (program | 2).Setup<GLfloat>(nPerVertex).Enable();
+    }
+    buffer[3].Bind(Buffer::Target::ElementArray);
+    {
+        Buffer::Data(Buffer::Target::ElementArray, indices);
+        gl.Enable(Capability::PrimitiveRestart);
+        gl.PrimitiveRestartIndex(restartIndex);
+    }
     this->indexSize = indices.size();
     // generate mesh chunk process
     this->chunkGenerator.generateChunks(
