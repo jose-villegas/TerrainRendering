@@ -35,11 +35,6 @@ void TerrainChunk::bindBuffer(Program &program)
 
 void TerrainChunk::chooseLoDLevel(Camera &camera, const glm::vec3 & position)
 {
-    //glm::vec3 test =
-    //    glm::vec3(
-    //        glm::vec4(this->center, 1.0f)
-    //        * TransformationMatrices::ModelViewProjection()
-    //    );
     distanceToEye = glm::distance2(position, camera.Position());
     float C = getCameraConstant(camera);
     // highest by default
@@ -49,7 +44,9 @@ void TerrainChunk::chooseLoDLevel(Camera &camera, const glm::vec3 & position)
     {
         entropyDistances[i] = C * C * heightChange[i] * heightChange[i];
 
-        if(distanceToEye > entropyDistances[i])
+        if(distanceToEye >
+           // we gotta scale the distances with the terrain enlargement
+           entropyDistances[i] * App::Instance()->getTerrain().TerrainHorizontalScale())
             currentLoD = ChunkDetailLevel::LodLevel(i + 1);
     }
 }

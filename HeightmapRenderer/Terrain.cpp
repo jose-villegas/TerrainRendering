@@ -109,6 +109,7 @@ void Terrain::render(float time)
 
     if(this->useLoDChunks)
     {
+        // not using quadtree yet
         for(int i = 0; i < chunkGenerator.ChunkCount(); i++)
         {
             for(int j = 0; j < chunkGenerator.ChunkCount(); j++)
