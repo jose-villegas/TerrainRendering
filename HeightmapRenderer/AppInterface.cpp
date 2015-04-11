@@ -28,12 +28,12 @@ void AppInterface::draw(float time)
             ImGui::SliderInt("Map Resolution", &heightmapResolution, 5, 11,
                              std::to_string((int)std::pow(2, heightmapResolution)).c_str());
 
-            if(ImGui::InputFloat("Maximum Height", &maxHeight, 0.001f, 0.2f))
+            if(ImGui::InputFloat("Maximum Height", &maxHeight, 0.1f, 0.75f))
             {
                 App::Instance()->getTerrain().HeightScale(maxHeight);
             }
 
-            if(ImGui::InputFloat("Terrain Scale", &terrainScale, 0.01, 1.0))
+            if(ImGui::InputFloat("Terrain Scale", &terrainScale, 0.1f, 0.75f))
             {
                 App::Instance()->getTerrain().TerrainHorizontalScale(terrainScale);
             }
@@ -109,22 +109,13 @@ void AppInterface::draw(float time)
                     ImGuiCol_FrameBg,
                     ImVec4(colorAt.r, colorAt.g, colorAt.b, 1.0f)
                 );
-                //static std::string timeString;
-                //static boost::format formatter("%d:%d : %d");
-                //int timeTarget = (abs(-std::cos(time * timeScale))) * 86400.0f;
-                //int hour = (timeTarget / 3600) % 24;
-                //int second = timeTarget % 3600;
-                //int minute = second / 60;
-                //second = second % 60;
-                //formatter % hour % minute % second;
-                //timeString = formatter.str();
                 ImGui::SliderFloat("##color", &tempTest, 0, 0, "");
                 ImGui::PopStyleColor();
             }
 
             ImGui::Text("Time Scale");
 
-            if(ImGui::InputFloat("##tscale", &timeScale, 0.00001, 0.1, 10))
+            if(ImGui::InputFloat("##tscale", &timeScale, 0.01, 0.025, 10))
             {
                 App::Instance()->getTerrain()
                 .TimeScale(timeScale);
@@ -146,7 +137,7 @@ void AppInterface::draw(float time)
             {
                 ImGui::Text("Pixel Error Threeshold");
 
-                if(ImGui::InputFloat("##ett", &geoThreeshold, 0.00001, 0.1, 10))
+                if(ImGui::InputFloat("##ett", &geoThreeshold, 0.01, 0.1, 10))
                 {
                     ChunkDetailLevel::Threeshold(geoThreeshold);
                     this->geoThreeshold = std::max(0.0f, geoThreeshold);

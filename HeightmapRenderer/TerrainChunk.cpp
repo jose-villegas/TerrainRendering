@@ -45,7 +45,7 @@ void TerrainChunk::chooseLoDLevel(Camera &camera, const glm::vec3 & position)
         entropyDistances[i] = C * C * heightChange[i] * heightChange[i];
 
         if(distanceToEye >
-           // we gotta scale the distances with the terrain enlargement
+           // we have to scale the distances with the terrain enlargement
            entropyDistances[i] * App::Instance()->getTerrain().TerrainHorizontalScale())
             currentLoD = ChunkDetailLevel::LodLevel(i + 1);
     }
