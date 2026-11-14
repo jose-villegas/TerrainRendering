@@ -20,7 +20,9 @@ class AppInterface
         int terrainSeed;
         bool terrainSeedSet;
         bool useRandom;
-        int occlusionStrenght;
+        // baked indirect light strengths
+        float skyLight;
+        float bounceLight;
         bool geomipmapping;
         float geoThreeshold;
         bool showBBoxes;

@@ -2,7 +2,20 @@
 #include "Terrain.h"
 #include "TransformationMatrices.h"
 #include "ChunkDetailLevel.h"
+#include "LightmapBaker.h"
+#include <chrono>
 using util::clamp;
+
+namespace
+{
+    // texture units of the baked lighting, the terrain textures use unit 0
+    const int lightmapsUnit = 1;
+    const int skyLightUnit = 2;
+    // the sky light texture stores [0, skyLightRange], same as terrain.frag
+    const float skyLightRange = 1.25f;
+    // the largest lightmap, the baker keeps 260 bytes per texel
+    const int maxLightmapSize = 1024;
+}
 
 glm::vec3 Terrain::calculateLightDir(float time)
 {
@@ -144,8 +157,9 @@ void Terrain::setProgramUniforms(float time)
     modelViewProjection.Set(TransformationMatrices::ModelViewProjection());
     modelView.Set(TransformationMatrices::ModelView());
     normalMatrix.Set(TransformationMatrices::Normal());
-    // shader time handler
-    currentLightmap.Set(fmod(time * timeScale, 3.14 * 2.0f) / (3.14 * 2.0f));
+    // time of the day in [0, 1), slice i was baked at (i + 0.5) / slices
+    currentLightmap.Set(std::fmod(time * timeScale, glm::two_pi<float>())
+                        / glm::two_pi<float>());
 }
 
 void Terrain::bindBuffers()
@@ -403,9 +417,6 @@ void Terrain::createTerrain(const int heightmapSize,
     .WrapT(TextureWrap::Repeat);
     heightmapCreated = true;
     meshCreated = false;
-    program.Use();
-    Uniform<glm::vec2>(program, "terrainMapSize")
-    .Set(glm::vec2(terrainResolution, terrainResolution));
 }
 
 void Terrain::createMesh(const int meshResExponent)
@@ -606,7 +617,7 @@ void Terrain::bakeLightmaps(float freq, int lightmapSize)
        || lightmapSize < 4
       ) return;
 
-    this->lightmapsFrequency = (int)std::ceil(freq);
+    lightmapSize = std::min(lightmapSize, maxLightmapSize);
 
     // end early the current working thread
     if(this->bakingThread.joinable())
@@ -622,14 +633,26 @@ void Terrain::bakeLightmaps(float freq, int lightmapSize)
     // will only happend if thread finished successfully
     if(bakingDone) createTOTD3DTexture();
 
+    this->lightmapsFrequency = (int)std::ceil(freq);
     this->lightmapResolution = lightmapSize;
     // reserve memory in main thread for new lightmap data
-    terrainLightmapsData = new unsigned char[
-        lightmapSize * lightmapSize * lightmapsFrequency
-    ];
+    terrainLightmapsData.assign((size_t)lightmapSize * lightmapSize
+                                * lightmapsFrequency * 2, 0);
+    // the mesh spans terrainHorizontalScale and rises heightScale, in
+    // lightmap texels
+    float verticalScale = heightScale / terrainHorizontalScale * lightmapSize;
+    // reflectance per height, the textures stay in the main thread
+    std::vector<float> albedoByHeight(256);
+
+    for(int i = 0; i < 256; i++)
+    {
+        albedoByHeight[i] = terrainTextures.Albedo(i / 255.0f);
+    }
+
     // bake all the lightmaps in a separate thread so it doesn't freeze the main thread
     this->bakingThread = std::thread(
-                             &Terrain::bakeTimeOfTheDayShadowmap, this, lightmapSize
+                             &Terrain::bakeTimeOfTheDayLightmaps, this, lightmapSize,
+                             verticalScale, std::move(albedoByHeight)
                          );
 }
 
@@ -755,6 +778,12 @@ void Terrain::initialize()
     Uniform<glm::vec2>(program, "terrainUVScaling").Set(
         glm::vec2(25, 25)
     );
+    // baked lighting texture units, full sun and open sky until a bake
+    UniformSampler(program, "bakedLightmaps").Set(lightmapsUnit);
+    UniformSampler(program, "bakedSkyLight").Set(skyLightUnit);
+    const unsigned char fullSun[2] = { 255, 0 };
+    const unsigned char openSky = (unsigned char)(255.0f / skyLightRange + 0.5f);
+    uploadBakedLighting(fullSun, &openSky, 1, 1);
     TransformationMatrices::Model(
         glm::scale(glm::mat4(), glm::vec3(15, heightScale, 15))
     );
@@ -769,63 +798,149 @@ void Terrain::initialize()
     this->TerrainHorizontalScale(15.f);
 }
 
-void Terrain::bakeTimeOfTheDayShadowmap(int lightmapSize)
+void Terrain::bakeTimeOfTheDayLightmaps(int lightmapSize,
+        float verticalScale, std::vector<float> albedoByHeight)
 {
     if(!heightmapCreated) return;
 
+    typedef std::chrono::steady_clock Clock;
+    auto seconds = [](Clock::time_point from)
+    {
+        return std::chrono::duration<float>(Clock::now() - from).count();
+    };
+    Clock::time_point bakeStart = Clock::now();
     this->bakingInProgress = true;
-    float sizeFreq = (float)this->lightmapsFrequency;
+    // heights like the mesh vertices: 3x3 average of the heightmap, then
+    // [-1, 1] to [0, 1]
+    const int size = terrainResolution;
+    std::vector<float> terrainHeights((size_t)size * size);
+    concurrency::parallel_for(0, size, [&](int y)
+    {
+        for(int x = 0; x < size; x++)
+        {
+            float sum = 0.0f;
+            int count = 0;
 
-    for(int i = 0; i < sizeFreq; i++)
+            for(int j = std::max(y - 1, 0); j <= std::min(y + 1, size - 1); j++)
+            {
+                for(int i = std::max(x - 1, 0); i <= std::min(x + 1, size - 1); i++)
+                {
+                    sum += heightmap.getValue(i, j);
+                    count++;
+                }
+            }
+
+            terrainHeights[y * size + x] = clamp((sum / count + 1.0f) / 2.0f, 0.0f, 1.0f);
+        }
+    });
+    // resampled at the lightmap texel centers, in texel units
+    const size_t texels = (size_t)lightmapSize * lightmapSize;
+    std::vector<float> heights(texels), albedo(texels);
+    concurrency::parallel_for(0, lightmapSize, [&](int y)
+    {
+        for(int x = 0; x < lightmapSize; x++)
+        {
+            float u = (x + 0.5f) / lightmapSize * (size - 1);
+            float v = (y + 0.5f) / lightmapSize * (size - 1);
+            int u0 = std::min((int)u, size - 2), v0 = std::min((int)v, size - 2);
+            float fu = u - u0, fv = v - v0;
+            const float *row = &terrainHeights[v0 * size + u0];
+            float height = glm::mix(glm::mix(row[0], row[1], fu),
+                                    glm::mix(row[size], row[size + 1], fu), fv);
+            heights[y * lightmapSize + x] = height * verticalScale;
+            albedo[y * lightmapSize + x] = albedoByHeight[(int)(height * 255.0f + 0.5f)];
+        }
+    });
+    LightmapBaker baker;
+
+    if(!baker.prepare(heights, albedo, lightmapSize, earlyExit)) return;
+
+    APP_LOG(info) << "Baking Info: horizons and " << LightmapBaker::HemisphereRays
+                  << " hemisphere rays per texel traced in " << seconds(bakeStart)
+                  << " s";
+    // sky light
+    const std::vector<float> &sky = baker.SkyLight();
+    skyLightData.resize(texels);
+
+    for(size_t t = 0; t < texels; t++)
+    {
+        skyLightData[t] = (unsigned char)(clamp(sky[t] / skyLightRange, 0.0f, 1.0f)
+                                          * 255.0f + 0.5f);
+    }
+
+    // sun light per time of the day
+    std::vector<float> sunVisibility, bounce;
+    const int slices = this->lightmapsFrequency;
+
+    for(int i = 0; i < slices; i++)
     {
         if(earlyExit) return;
 
-        std::vector<unsigned char> bakedLightmap;
-        this->fastGenerateShadowmapParallel(
-            calculateLightDir(2.0f * glm::pi<float>() * (float)(i + 1) / sizeFreq),
-            bakedLightmap, lightmapSize
-        );
-        std::copy(
-            bakedLightmap.begin(), bakedLightmap.end(),
-            &this->terrainLightmapsData[
-                i * lightmapSize * lightmapSize
-            ]
-        );
-        // print baking progress
-        APP_LOG(info) << "Baking Info: Lightmap "
-                                << i + 1 << "/"
-                                << lightmapsFrequency
-                                << " ("
-                                << (int)(100 * (float)(i + 1) / (lightmapsFrequency))
-                                << "%) created";
-        bakedLightmap.clear();
-    };
+        float time = glm::two_pi<float>() * (i + 0.5f) / slices;
+        baker.bakeSlice(calculateLightDir(time), sunVisibility, bounce);
+        unsigned char *out = &terrainLightmapsData[i * texels * 2];
 
+        for(size_t t = 0; t < texels; t++)
+        {
+            out[t * 2] = (unsigned char)(clamp(sunVisibility[t], 0.0f, 1.0f) * 255.0f
+                                         + 0.5f);
+            // square root for more precision in the dim bounces
+            out[t * 2 + 1] = (unsigned char)(std::sqrt(clamp(bounce[t], 0.0f, 1.0f))
+                                             * 255.0f + 0.5f);
+        }
+
+        // print baking progress
+        if((i + 1) % 32 == 0 || i + 1 == slices)
+        {
+            APP_LOG(info) << "Baking Info: Lightmap "
+                          << i + 1 << "/" << slices
+                          << " (" << (int)(100 * (float)(i + 1) / slices)
+                          << "%) created, " << seconds(bakeStart) << " s";
+        }
+    };
     this->bakingDone = true;
+}
+
+void Terrain::uploadBakedLighting(const unsigned char *lightmaps,
+                                  const unsigned char *skyLight, int size, int slices)
+{
+    // rows of one or two bytes are not 4 byte aligned
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glActiveTexture(GL_TEXTURE0 + lightmapsUnit);
+    // clamped at the terrain edges, repeated over the day
+    gl.Bound(Texture::Target::_3D, this->terrainTOTDLightmap)
+    .MinFilter(TextureMinFilter::Linear)
+    .MagFilter(TextureMagFilter::Linear)
+    .WrapS(TextureWrap::ClampToEdge)
+    .WrapT(TextureWrap::ClampToEdge)
+    .WrapR(TextureWrap::Repeat)
+    .Image3D(0, PixelDataInternalFormat::RG8, size, size, slices, 0,
+             PixelDataFormat::RG, PixelDataType::UnsignedByte, lightmaps);
+    glActiveTexture(GL_TEXTURE0 + skyLightUnit);
+    gl.Bound(Texture::Target::_2D, this->terrainSkyLight)
+    .MinFilter(TextureMinFilter::Linear)
+    .MagFilter(TextureMagFilter::Linear)
+    .WrapS(TextureWrap::ClampToEdge)
+    .WrapT(TextureWrap::ClampToEdge)
+    .Image2D(0, PixelDataInternalFormat::R8, size, size, 0,
+             PixelDataFormat::Red, PixelDataType::UnsignedByte, skyLight);
+    glActiveTexture(GL_TEXTURE0);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
 }
 
 void Terrain::createTOTD3DTexture()
 {
-    // pass data to interface texture
-    gl.Bound(Texture::Target::_3D, this->terrainTOTDLightmap)
-    .MinFilter(TextureMinFilter::Linear)
-    .MagFilter(TextureMagFilter::Linear)
-    .WrapS(TextureWrap::Repeat)
-    .WrapT(TextureWrap::Repeat)
-    .Image3D(0, PixelDataInternalFormat::R8, lightmapResolution,
-             lightmapResolution, this->lightmapsFrequency, 0,
-             PixelDataFormat::Red, PixelDataType::UnsignedByte, terrainLightmapsData);
+    uploadBakedLighting(terrainLightmapsData.data(), skyLightData.data(),
+                        lightmapResolution, lightmapsFrequency);
     // print baking info
     APP_LOG(info) << "Baking Done, "
-                            << this->lightmapsFrequency
-                            << " lightmaps created, "
-                            << (float)this->lightmapsFrequency / 24.0f
-                            << " per hour";
-    // set new lightmap size to shader
-    Uniform<glm::vec2>(program, "lightmapSize")
-    .Set(glm::vec2(lightmapResolution, lightmapResolution));
-    // delete temporal raw data once uploaded to gpu
-    delete[]terrainLightmapsData;
+                  << this->lightmapsFrequency
+                  << " lightmaps created, "
+                  << (float)this->lightmapsFrequency / 24.0f
+                  << " per hour";
+    // free the raw data once uploaded to gpu
+    std::vector<unsigned char>().swap(terrainLightmapsData);
+    std::vector<unsigned char>().swap(skyLightData);
     // baking flags for done upload
     bakingDone = false;
     bakingInProgress = false;
@@ -837,15 +952,12 @@ Terrain::~Terrain()
     {
         this->earlyExit = true;
         this->bakingThread.join();
-
-        if(bakingDone) delete[]terrainLightmapsData;
     };
 }
 
-void Terrain::Occlusion(float occlusionStrenght)
+void Terrain::IndirectLight(float skyStrength, float bounceStrength)
 {
-    if(occlusionStrenght < 0.0f) return;
-
     program.Use();
-    Uniform<float>(program, "occlusionStrength").Set(occlusionStrenght);
+    Uniform<float>(program, "skyLightStrength").Set(std::max(0.0f, skyStrength));
+    Uniform<float>(program, "bounceStrength").Set(std::max(0.0f, bounceStrength));
 }
