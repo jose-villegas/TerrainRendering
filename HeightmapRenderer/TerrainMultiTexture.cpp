@@ -30,11 +30,14 @@ void TerrainMultiTexture::loadTexture(const std::string &filepath,
         dib = FreeImage_Load(fif, filepath.c_str());
     }
 
+    if(!dib) return;
+
     // highest quality rescaleing
-    dib = FreeImage_Rescale(dib, 512, 512, FILTER_BICUBIC);
+    FIBITMAP *rescaled = FreeImage_Rescale(dib, 512, 512, FILTER_BICUBIC);
+    FreeImage_Unload(dib);
     // no alpha channel for terrain textures
-    dib = FreeImage_ConvertTo24Bits(dib);
-    // dib = FreeImage_ConvertTo32Bits(dib);
+    dib = FreeImage_ConvertTo24Bits(rescaled);
+    FreeImage_Unload(rescaled);
     // get raw data
     unsigned char * bits = FreeImage_GetBits(dib);
     // get image data
@@ -49,16 +52,17 @@ void TerrainMultiTexture::loadTexture(const std::string &filepath,
         return;
     }
 
-    // pass data to the texture array
+    // pass data to the texture array, the mipmaps are generated after the
+    // layer upload, otherwise the new layer keeps its previous empty mipmaps
     gl.Bound(Texture::Target::_2DArray, this->texture)
     .MinFilter(TextureMinFilter::LinearMipmapLinear)
     .MagFilter(TextureMagFilter::Linear)
-    .GenerateMipmap()
     .WrapS(TextureWrap::Repeat)
     .WrapT(TextureWrap::Repeat)
     .Anisotropy(16.0f)
     .SubImage3D(0, 0, 0, index, 512, 512, 1, PixelDataFormat::BGR,
-                PixelDataType::UnsignedByte, bits);
+                PixelDataType::UnsignedByte, bits)
+    .GenerateMipmap();
     // pass data to interface texture
     gl.Bound(Texture::Target::_2D, this->uiTextures[index])
     .Image2D(0, PixelDataInternalFormat::RGB8, 512, 512, 0, PixelDataFormat::BGR,

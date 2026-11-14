@@ -237,7 +237,17 @@ vec3 generateTerrainColor(float height, vec2 texCoord)
         regionMin = terrainRange[i].x;
         regionMax = terrainRange[i].y;
         regionRange = regionMax - regionMin;
-        regionWeight = max(0.0, (regionRange - abs(height - regionMax)) / regionRange);
+        // the lowest and highest regions keep full weight past their ends,
+        // otherwise the deepest valleys and highest peaks fade to black
+        float regionOffset = height - regionMax;
+
+        if((i == 0 && regionOffset < 0.0)
+           || (i == MAX_TERRAIN_TEXTURE_RANGES - 1 && regionOffset > 0.0))
+        {
+            regionOffset = 0.0;
+        }
+
+        regionWeight = max(0.0, (regionRange - abs(regionOffset)) / regionRange);
         terrainSurfaceColor = terrainRange[i].z > 0.0
                               ? texture(terrainTextures, vec3(terrainUV, i)).rgb
                               : heightSample[i];
