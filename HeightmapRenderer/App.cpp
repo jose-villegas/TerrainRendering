@@ -203,12 +203,13 @@ namespace
     const int captureFrames = 240;
     const int captureWireframeFrom = 120;
     // the orbit starts at the camera and sun of the readme screenshot, found by
-    // matching its terrain silhouette and shading, then the sun lowers
-    // towards the evening so the shadows stretch across the terrain, the
-    // baked lightmaps interpolate between the times of the day
+    // matching its terrain silhouette and shading, then the sun rises
+    // towards noon so the shadows shorten and turn across the terrain and the
+    // wireframe half stays well lit, the baked lightmaps interpolate between
+    // the times of the day
     const float captureStartAngle = glm::radians(34.5f);
     const float captureSunFrom = 1.16f;
-    const float captureSunTo = 1.85f;
+    const float captureSunTo = 0.3f;
     // pixel error large enough to show the level of detail chunks
     const float capturePixelError = 3.0f;
 }
