@@ -37,7 +37,9 @@ glm::vec3 Terrain::calculateLightDir(float time)
     if(dirY > 0.0) dirY *= sunAltitude;
     else dirY *= moonAltitude;
 
-    return glm::vec3(dirX, std::abs(dirY), dirZ);
+    // the sun shines from the far side of the terrain, where the original
+    // baker cast its shadows from, the shading and the bake agree on it
+    return glm::vec3(-dirX, std::abs(dirY), -dirZ);
 }
 
 void Terrain::calculateLightDir(float time, glm::vec3 &outDir,
@@ -99,7 +101,8 @@ void Terrain::calculateLightDir(float time, glm::vec3 &outDir,
     if(dirY > 0.0) dirY *= sunAltitude;
     else dirY *= moonAltitude;
 
-    outDir = glm::vec3(dirX, std::abs(dirY), dirZ);
+    // the sun shines from the far side of the terrain, same as above
+    outDir = glm::vec3(-dirX, std::abs(dirY), -dirZ);
 }
 
 float Terrain::heightAt(glm::vec2 position)
@@ -212,6 +215,9 @@ void Terrain::fastGenerateShadowmapParallel(glm::vec3 lightDir,
 
     if(glm::length2(lightDir) == 0.0) return;
 
+    // the rays below march along -lightDir, lightDir points to the sun
+    lightDir.x = -lightDir.x;
+    lightDir.z = -lightDir.z;
     // initialize shadow map
     lightmap = std::vector<unsigned char>(lightmapSize * lightmapSize);
     // create flag buffer to indicate where we've been
