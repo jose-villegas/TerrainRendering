@@ -34,9 +34,9 @@ class LightShafts
         };
 
         // extinction per world unit at the ground
-        float density = 0.08f;
+        float density = 0.04f;
         // scales the scattered sunlight
-        float intensity = 5.0f;
+        float intensity = 3.5f;
 
         // binds the offscreen scene target, size of the default framebuffer
         void beginScene(int width, int height);

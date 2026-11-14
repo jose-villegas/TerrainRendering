@@ -227,7 +227,7 @@ namespace
     const float captureStartAngle = glm::radians(34.5f);
     const float captureSunFrom = 2.05f;
     const float captureSunTo = 0.6f;
-    // with the light shafts the sun sets instead, low enough for the peaks to
+    // the --light-shafts capture sets the sun instead, low enough for the peaks to
     // cast long shadows through the fog, and without the wireframe
     const float captureShaftsSunFrom = 1.7f;
     const float captureShaftsSunTo = 2.05f;
@@ -283,11 +283,22 @@ void App::setupCapture()
     gui.geoThreeshold = capturePixelError;
     ChunkDetailLevel::Threeshold(capturePixelError);
     gui.hidden = true;
+    // --light-shafts picks the sunset capture, both show the light shafts
+    captureSunset = gui.lightShafts;
+    gui.lightShafts = true;
+
+    // the sunset is about the haze, thicker and brighter than the default
+    if(captureSunset)
+    {
+        gui.shaftDensity = 0.08f;
+        gui.shaftIntensity = 5.0f;
+    }
+
     // the low sun of the readme shadows would turn the time of the day
-    // grading into a sunset, the screenshot colors are neutral; the light
-    // shafts capture keeps it, its sunset is the point
-    gui.colorGrading = gui.lightShafts;
-    terrain.EnableTimeOfTheDayColorGrading(gui.lightShafts);
+    // grading into a sunset, the screenshot colors are neutral; the sunset
+    // capture keeps it, its sunset is the point
+    gui.colorGrading = captureSunset;
+    terrain.EnableTimeOfTheDayColorGrading(captureSunset);
     // path trace the time of the day lighting, the first render uploads it
     terrain.bakeLightmaps(384, 512);
 
@@ -306,10 +317,10 @@ bool App::updateCapture(int frame, float &time)
 
     // fixed steps so the capture does not depend on the frame rate
     float progress = (float)frame / (captureFrames - 1);
-    float sunFrom = gui.lightShafts ? captureShaftsSunFrom : captureSunFrom;
-    float sunTo = gui.lightShafts ? captureShaftsSunTo : captureSunTo;
+    float sunFrom = captureSunset ? captureShaftsSunFrom : captureSunFrom;
+    float sunTo = captureSunset ? captureShaftsSunTo : captureSunTo;
     time = glm::mix(sunFrom, sunTo, progress) / gui.timeScale;
-    gui.wireframeMode = !gui.lightShafts && frame >= captureWireframeFrom;
+    gui.wireframeMode = !captureSunset && frame >= captureWireframeFrom;
     // orbit around the terrain center
     float angle = captureStartAngle + glm::two_pi<float>() * frame / captureFrames;
     camera.lookAt(

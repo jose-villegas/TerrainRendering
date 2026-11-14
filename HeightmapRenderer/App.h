@@ -38,6 +38,8 @@ class App
         // opt-in capture mode (--capture <dir>), orbits the camera around the
         // terrain, switches to wireframe partway and saves every frame as png
         std::string captureDir;
+        // with --light-shafts the capture sweeps a sunset instead
+        bool captureSunset = false;
         void setupCapture();
         bool updateCapture(int frame, float &time);
         void saveFrame(int frame);
