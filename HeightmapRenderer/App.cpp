@@ -284,9 +284,10 @@ void App::setupCapture()
     ChunkDetailLevel::Threeshold(capturePixelError);
     gui.hidden = true;
     // the low sun of the readme shadows would turn the time of the day
-    // grading into a sunset, the screenshot colors are neutral
-    gui.colorGrading = false;
-    terrain.EnableTimeOfTheDayColorGrading(false);
+    // grading into a sunset, the screenshot colors are neutral; the light
+    // shafts capture keeps it, its sunset is the point
+    gui.colorGrading = gui.lightShafts;
+    terrain.EnableTimeOfTheDayColorGrading(gui.lightShafts);
     // path trace the time of the day lighting, the first render uploads it
     terrain.bakeLightmaps(384, 512);
 
