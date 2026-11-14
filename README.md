@@ -11,7 +11,7 @@ Write-up: https://jose-villegas.github.io/post/terrain/
 ## Features
 
 - Heightmaps generated with libnoise, textured by height with four blended texture ranges.
-- Time of the day lighting with baked shadow lightmaps, and ambient occlusion sampled from the heightmap.
+- Time of the day lighting from path-traced lightmaps: soft sun shadows, sky light and two diffuse bounces, baked on the CPU for 384 times of the day (about 9 seconds for 512x512 lightmaps on 32 threads).
 - Geomipmapping: the mesh is split in chunks, each drawn at the coarsest level whose screen-space error stays under a pixel threshold, with the borders stitched to coarser neighbours so the mesh stays watertight.
 
 ## Building

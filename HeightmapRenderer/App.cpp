@@ -243,7 +243,7 @@ void App::setupCapture()
     gui.geoThreeshold = capturePixelError;
     ChunkDetailLevel::Threeshold(capturePixelError);
     gui.hidden = true;
-    // bake the time of the day shadows, the first render uploads them
+    // path trace the time of the day lighting, the first render uploads it
     terrain.bakeLightmaps(384, 512);
 
     while(!terrain.LightmapsBaked())

@@ -48,7 +48,7 @@ void AppInterface::draw(float time)
             ImGui::SameLine();
             // set proper ranges
             lightmapFreqAndSize[0] = std::max(1, lightmapFreqAndSize[0]);
-            lightmapFreqAndSize[1] = std::min(std::max(4, lightmapFreqAndSize[1]), 4096);
+            lightmapFreqAndSize[1] = std::min(std::max(4, lightmapFreqAndSize[1]), 1024);
 
             if(ImGui::Button("Bake Lightmaps"))
             {
@@ -121,11 +121,12 @@ void AppInterface::draw(float time)
                 .TimeScale(timeScale);
             }
 
-            ImGui::Text("Ambient Occlusion");
+            ImGui::Text("Sky Light / Bounce Light");
 
-            if(ImGui::SliderInt("##ao", &occlusionStrenght, 0, 32))
+            if(ImGui::SliderFloat("##sky", &skyLight, 0.0f, 1.0f)
+               | ImGui::SliderFloat("##bounce", &bounceLight, 0.0f, 4.0f))
             {
-                App::Instance()->getTerrain().Occlusion(occlusionStrenght);
+                App::Instance()->getTerrain().IndirectLight(skyLight, bounceLight);
             }
 
             if(ImGui::Checkbox("Enable Geomipmapping", &geomipmapping))
@@ -312,7 +313,8 @@ void AppInterface::terminate()
 
 AppInterface::AppInterface()
 {
-    this->occlusionStrenght = 4;
+    this->skyLight = 0.2f;
+    this->bounceLight = 1.0f;
     this->maxHeight = 2.0;
     this->terrainScale = 15.f;
     this->meshResolution = 8;

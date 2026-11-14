@@ -35,9 +35,12 @@ class Terrain
         void setProgramUniforms(float time);
         // multiplies for current time
         float timeScale;
-        // temporal baked ligthmaps data, deleted once
-        // baking is done
-        unsigned char * terrainLightmapsData;
+        // baked lightmaps waiting for the upload, two bytes per texel and
+        // time of the day: sun disk visibility and the square root of the
+        // bounced sun light
+        std::vector<unsigned char> terrainLightmapsData;
+        // baked sky light waiting for the upload, one byte per texel
+        std::vector<unsigned char> skyLightData;
         // flag to tell the main thread when lightmap baking is done
         // upload data to GPU once done
         std::atomic<bool> bakingDone = false;
@@ -47,10 +50,12 @@ class Terrain
         bool enableTimeOfTheDayColorGrading = true;
         // thread for baking all time of the day lightmaps
         std::thread bakingThread;
-        // freq represents the number of sampler per day
-        // for example 24 == 1 shadowmap per hour
+        // path traces lightmapsFrequency times of the day, 24 is one per
+        // hour, with the terrain heights scaled by verticalScale texels and
+        // the diffuse reflectance per height in albedoByHeight
         // call using bakingThread, this is a heavy operation
-        void bakeTimeOfTheDayShadowmap(int lightmapSize);
+        void bakeTimeOfTheDayLightmaps(int lightmapSize, float verticalScale,
+                                       std::vector<float> albedoByHeight);
     private:
         // terrain status indicator
         bool defaultLightmapsBaked = false;
@@ -83,11 +88,16 @@ class Terrain
         Texture terrainShadowmap;
         // time of the day 3d texture
         Texture terrainTOTDLightmap;
+        // sky light, the same at any time of the day
+        Texture terrainSkyLight;
         // heightmap generator
         Heightmap heightmap;
         // multitexture handling class
         TerrainMultiTexture terrainTextures;
         void createTOTD3DTexture();
+        // uploads size * size * slices lightmaps and size * size sky light
+        void uploadBakedLighting(const unsigned char *lightmaps,
+                                 const unsigned char *skyLight, int size, int slices);
     public:
         void initialize();
         void render(float time);
@@ -143,6 +153,7 @@ class Terrain
 
         Terrain();
         ~Terrain();
-        void Occlusion(float occlusionStrenght);
+        // strength of the baked sky light and of the bounced sun light
+        void IndirectLight(float skyStrength, float bounceStrength);
 };
 

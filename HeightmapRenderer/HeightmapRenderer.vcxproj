@@ -102,6 +102,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="OpenFileDialog.cpp" />
+    <ClCompile Include="LightmapBaker.cpp" />
     <ClCompile Include="Terrain.cpp" />
     <ClCompile Include="Heightmap.cpp" />
     <ClCompile Include="LibNoise\include\noiseutils.cpp">
@@ -235,6 +236,7 @@
     <ClInclude Include="ImGui\imgui.h" />
     <ClInclude Include="ImGui\imgui_impl_glfw_gl3.h" />
     <ClInclude Include="OpenFileDialog.h" />
+    <ClInclude Include="LightmapBaker.h" />
     <ClInclude Include="Terrain.h" />
     <ClInclude Include="Heightmap.h" />
     <ClInclude Include="TerrainChunk.h" />
