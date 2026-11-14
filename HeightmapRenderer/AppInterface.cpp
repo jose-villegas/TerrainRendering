@@ -3,7 +3,7 @@
 #include "AppInterface.h"
 #include "TransformationMatrices.h"
 #include "OpenFileDialog.h"
-using namespace boost::algorithm;
+using util::clamp;
 
 void AppInterface::initialize(GLFWwindow * window)
 {
@@ -69,16 +69,14 @@ void AppInterface::draw(float time)
 
             if(ImGui::Button("Save Heightmap To File"))
             {
-                using namespace boost::posix_time;
-                // set string format
-                static std::locale loc(std::cout.getloc(), new time_facet("%Y-%m-%d_%H-%M-%S"));
-                // parse it to a std::string
-                std::basic_stringstream<char> wss;
-                wss.imbue(loc);
-                // get current time
-                wss << second_clock::universal_time();
+                // format the current utc time as a timestamp
+                char stamp[32];
+                std::time_t now = std::time(nullptr);
+                std::tm utc;
+                gmtime_s(&utc, &now);
+                std::strftime(stamp, sizeof(stamp), "%Y-%m-%d_%H-%M-%S", &utc);
                 // write terrain to file, concatenate timestamp
-                App::Instance()->getTerrain().saveTerrainToFile("terrain" + wss.str());
+                App::Instance()->getTerrain().saveTerrainToFile("terrain" + std::string(stamp));
             }
 
             stackedSize = ImGui::GetWindowSize();

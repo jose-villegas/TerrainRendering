@@ -67,49 +67,15 @@ void App::Configure()
         this->appWindow->windowWidth(),
         this->appWindow->windowHeight()
     );
-    //setup logging to file
-    logging::add_file_log
-    (
-        keywords::file_name = "app_%N.log",
-        keywords::format =
-            (
-                expr::stream
-                << expr::format_date_time< boost::posix_time::ptime >("TimeStamp",
-                        "%Y-%m-%d %H:%M:%S") << ":"
-                << expr::attr< unsigned int >("LineID")
-                << " <" << logging::trivial::severity << "> "
-                << expr::smessage
-            )
-    );
-    logging::add_console_log
-    (
-        std::cout,
-        keywords::format =
-            (
-                expr::stream
-                << expr::format_date_time< boost::posix_time::ptime >("TimeStamp",
-                        "%Y-%m-%d %H:%M:%S") << ":"
-                << expr::attr< unsigned int >("LineID")
-                << " <" << logging::trivial::severity << "> "
-                << expr::smessage
-            )
-    );
-    // filter priority
-    logging::core::get()->set_filter
-    (
-        logging::trivial::severity >= logging::trivial::info
-    );
-    logging::add_common_attributes();
+    //setup logging to console and file, filter priority
+    logging::Logger::get().addFile("app_0.log");
+    logging::Logger::get().setMinimum(logging::severity::info);
     // log libraries version
-    BOOST_LOG_TRIVIAL(info) << "GLFW " << glfwGetVersionString();
-    BOOST_LOG_TRIVIAL(info) << "OpenGL " << glGetString(GL_VERSION) << "s, GLSL " <<
+    APP_LOG(info) << "GLFW " << glfwGetVersionString();
+    APP_LOG(info) << "OpenGL " << glGetString(GL_VERSION) << "s, GLSL " <<
                             glGetString(GL_SHADING_LANGUAGE_VERSION);
-    BOOST_LOG_TRIVIAL(info) << "Boost "
-                            << BOOST_VERSION / 100000 << "."        // major version
-                            << BOOST_VERSION / 100 % 1000 << "."    // minior version
-                            << BOOST_VERSION % 100;                 // patch level
-    BOOST_LOG_TRIVIAL(info) << "Ocornut's IMGUI " << ImGui::GetVersion();
-    BOOST_LOG_TRIVIAL(info) << "FreeImage "
+    APP_LOG(info) << "Ocornut's IMGUI " << ImGui::GetVersion();
+    APP_LOG(info) << "FreeImage "
                             << std::to_string(FREEIMAGE_MAJOR_VERSION)
                             << "." + std::to_string(FREEIMAGE_MINOR_VERSION)
                             << "." + std::to_string(FREEIMAGE_RELEASE_SERIAL);
@@ -314,13 +280,13 @@ void App::Run()
     catch(oglplus::ProgramBuildError &e)
     {
         glfwTerminate();
-        BOOST_LOG_TRIVIAL(error) << e.Log();
+        APP_LOG(error) << e.Log();
         throw std::runtime_error(e.what());
     }
     catch(std::exception &e)
     {
         glfwTerminate();
-        BOOST_LOG_TRIVIAL(error) << e.what();
+        APP_LOG(error) << e.what();
         throw std::runtime_error(e.what());
     }
 }

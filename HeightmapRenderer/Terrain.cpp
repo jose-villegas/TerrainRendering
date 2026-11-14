@@ -2,7 +2,7 @@
 #include "Terrain.h"
 #include "TransformationMatrices.h"
 #include "ChunkDetailLevel.h"
-using namespace boost::algorithm;
+using util::clamp;
 
 glm::vec3 Terrain::calculateLightDir(float time)
 {
@@ -799,7 +799,7 @@ void Terrain::bakeTimeOfTheDayShadowmap(int lightmapSize)
             ]
         );
         // print baking progress
-        BOOST_LOG_TRIVIAL(info) << "Baking Info: Lightmap "
+        APP_LOG(info) << "Baking Info: Lightmap "
                                 << i + 1 << "/"
                                 << lightmapsFrequency
                                 << " ("
@@ -823,7 +823,7 @@ void Terrain::createTOTD3DTexture()
              lightmapResolution, this->lightmapsFrequency, 0,
              PixelDataFormat::Red, PixelDataType::UnsignedByte, terrainLightmapsData);
     // print baking info
-    BOOST_LOG_TRIVIAL(info) << "Baking Done, "
+    APP_LOG(info) << "Baking Done, "
                             << this->lightmapsFrequency
                             << " lightmaps created, "
                             << (float)this->lightmapsFrequency / 24.0f

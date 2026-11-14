@@ -1,6 +1,9 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
+    <Filter Include="Source Files\LibNoise">
+      <UniqueIdentifier>{5d3c2b1e-7a40-4f8e-9c61-2b7e4d9a0f13}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Source Files">
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
       <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
@@ -15,6 +18,111 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="LibNoise\include\noise\latlon.cpp">
+      <Filter>Source Files\LibNoise</Filter>
+    </ClCompile>
+    <ClCompile Include="LibNoise\include\noise\model\cylinder.cpp">
+      <Filter>Source Files\LibNoise</Filter>
+    </ClCompile>
+    <ClCompile Include="LibNoise\include\noise\model\line.cpp">
+      <Filter>Source Files\LibNoise</Filter>
+    </ClCompile>
+    <ClCompile Include="LibNoise\include\noise\model\plane.cpp">
+      <Filter>Source Files\LibNoise</Filter>
+    </ClCompile>
+    <ClCompile Include="LibNoise\include\noise\model\sphere.cpp">
+      <Filter>Source Files\LibNoise</Filter>
+    </ClCompile>
+    <ClCompile Include="LibNoise\include\noise\module\abs.cpp">
+      <Filter>Source Files\LibNoise</Filter>
+    </ClCompile>
+    <ClCompile Include="LibNoise\include\noise\module\add.cpp">
+      <Filter>Source Files\LibNoise</Filter>
+    </ClCompile>
+    <ClCompile Include="LibNoise\include\noise\module\billow.cpp">
+      <Filter>Source Files\LibNoise</Filter>
+    </ClCompile>
+    <ClCompile Include="LibNoise\include\noise\module\blend.cpp">
+      <Filter>Source Files\LibNoise</Filter>
+    </ClCompile>
+    <ClCompile Include="LibNoise\include\noise\module\cache.cpp">
+      <Filter>Source Files\LibNoise</Filter>
+    </ClCompile>
+    <ClCompile Include="LibNoise\include\noise\module\checkerboard.cpp">
+      <Filter>Source Files\LibNoise</Filter>
+    </ClCompile>
+    <ClCompile Include="LibNoise\include\noise\module\clamp.cpp">
+      <Filter>Source Files\LibNoise</Filter>
+    </ClCompile>
+    <ClCompile Include="LibNoise\include\noise\module\const.cpp">
+      <Filter>Source Files\LibNoise</Filter>
+    </ClCompile>
+    <ClCompile Include="LibNoise\include\noise\module\curve.cpp">
+      <Filter>Source Files\LibNoise</Filter>
+    </ClCompile>
+    <ClCompile Include="LibNoise\include\noise\module\cylinders.cpp">
+      <Filter>Source Files\LibNoise</Filter>
+    </ClCompile>
+    <ClCompile Include="LibNoise\include\noise\module\displace.cpp">
+      <Filter>Source Files\LibNoise</Filter>
+    </ClCompile>
+    <ClCompile Include="LibNoise\include\noise\module\exponent.cpp">
+      <Filter>Source Files\LibNoise</Filter>
+    </ClCompile>
+    <ClCompile Include="LibNoise\include\noise\module\invert.cpp">
+      <Filter>Source Files\LibNoise</Filter>
+    </ClCompile>
+    <ClCompile Include="LibNoise\include\noise\module\max.cpp">
+      <Filter>Source Files\LibNoise</Filter>
+    </ClCompile>
+    <ClCompile Include="LibNoise\include\noise\module\min.cpp">
+      <Filter>Source Files\LibNoise</Filter>
+    </ClCompile>
+    <ClCompile Include="LibNoise\include\noise\module\modulebase.cpp">
+      <Filter>Source Files\LibNoise</Filter>
+    </ClCompile>
+    <ClCompile Include="LibNoise\include\noise\module\multiply.cpp">
+      <Filter>Source Files\LibNoise</Filter>
+    </ClCompile>
+    <ClCompile Include="LibNoise\include\noise\module\perlin.cpp">
+      <Filter>Source Files\LibNoise</Filter>
+    </ClCompile>
+    <ClCompile Include="LibNoise\include\noise\module\power.cpp">
+      <Filter>Source Files\LibNoise</Filter>
+    </ClCompile>
+    <ClCompile Include="LibNoise\include\noise\module\ridgedmulti.cpp">
+      <Filter>Source Files\LibNoise</Filter>
+    </ClCompile>
+    <ClCompile Include="LibNoise\include\noise\module\rotatepoint.cpp">
+      <Filter>Source Files\LibNoise</Filter>
+    </ClCompile>
+    <ClCompile Include="LibNoise\include\noise\module\scalebias.cpp">
+      <Filter>Source Files\LibNoise</Filter>
+    </ClCompile>
+    <ClCompile Include="LibNoise\include\noise\module\scalepoint.cpp">
+      <Filter>Source Files\LibNoise</Filter>
+    </ClCompile>
+    <ClCompile Include="LibNoise\include\noise\module\select.cpp">
+      <Filter>Source Files\LibNoise</Filter>
+    </ClCompile>
+    <ClCompile Include="LibNoise\include\noise\module\spheres.cpp">
+      <Filter>Source Files\LibNoise</Filter>
+    </ClCompile>
+    <ClCompile Include="LibNoise\include\noise\module\terrace.cpp">
+      <Filter>Source Files\LibNoise</Filter>
+    </ClCompile>
+    <ClCompile Include="LibNoise\include\noise\module\translatepoint.cpp">
+      <Filter>Source Files\LibNoise</Filter>
+    </ClCompile>
+    <ClCompile Include="LibNoise\include\noise\module\turbulence.cpp">
+      <Filter>Source Files\LibNoise</Filter>
+    </ClCompile>
+    <ClCompile Include="LibNoise\include\noise\module\voronoi.cpp">
+      <Filter>Source Files\LibNoise</Filter>
+    </ClCompile>
+    <ClCompile Include="LibNoise\include\noise\noisegen.cpp">
+      <Filter>Source Files\LibNoise</Filter>
+    </ClCompile>
     <ClCompile Include="MainWindow.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -71,6 +179,9 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Logging.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="MainWindow.h">
       <Filter>Header Files</Filter>
     </ClInclude>
