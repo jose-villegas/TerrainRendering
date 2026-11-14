@@ -151,10 +151,18 @@ void App::Start()
         glm::vec3(0, 0, 5), 0
     );
     App::Instance()->getTerrain().createMesh(8);
+    const bool capturing = !captureDir.empty();
+    int frame = 0;
+
+    if(capturing) setupCapture();
 
     while(!glfwWindowShouldClose(this->appWindow->getWindow()))
     {
-        if(!gui.pauseTime) time += ImGui::GetIO().DeltaTime;
+        if(capturing)
+        {
+            if(!updateCapture(frame, time)) break;
+        }
+        else if(!gui.pauseTime) time += ImGui::GetIO().DeltaTime;
 
         //camera.lookAt(
         //    glm::vec3(
@@ -180,9 +188,105 @@ void App::Start()
         terrain.render(time);
         // render user interface
         gui.render();
+
+        if(capturing) saveFrame(frame++);
+
         // swap double buffer
         glfwSwapBuffers(this->appWindow->getWindow());
     }
+}
+
+namespace
+{
+    // capture mode frames: one full orbit, 8 seconds when played at 30 frames
+    // per second, wireframe from the middle on
+    const int captureFrames = 240;
+    const int captureWireframeFrom = 120;
+    // time of the day sweep in radians of the day cycle, mid morning to mid
+    // afternoon, noon falls on the far side of the orbit where the camera
+    // faces the sun, the baked lightmaps interpolate in between
+    const float captureSunFrom = -0.9f;
+    const float captureSunTo = 0.9f;
+    // pixel error large enough to show the level of detail chunks
+    const float capturePixelError = 3.0f;
+}
+
+void App::setupCapture()
+{
+    CreateDirectoryA(captureDir.c_str(), nullptr);
+    // same terrain as the readme screenshot, 513 mesh on a 512 heightmap
+    gui.meshResolution = gui.heightmapResolution = 9;
+    terrain.createTerrain(512, glm::vec3(0, 0, 5), 0);
+    terrain.createMesh(9);
+    // textured terrain from low to high: soil, grass, soil, snow, on the
+    // default quarter height ranges
+    const char *soil =
+        "Resources\\Textures\\depositphotos_30900321-Seamless-Texture-of-Rocky-Steppe-Soil..jpg";
+    const char *textures[4] =
+    {
+        soil,
+        "Resources\\Textures\\Seamless_grass_texture_by_hhh316.jpg",
+        soil,
+        "Resources\\Textures\\snow_scuffed_ground_1.jpg"
+    };
+
+    for(int i = 0; i < 4; i++)
+    {
+        terrain.loadTexture(i, textures[i]);
+        terrain.setTextureRange(i, i / 4.0f, (i + 1) / 4.0f);
+    }
+
+
+    // the level of detail chunks show the mesh subdivision in wireframe
+    gui.geomipmapping = terrain.useLoDChunks = true;
+    gui.geoThreeshold = capturePixelError;
+    ChunkDetailLevel::Threeshold(capturePixelError);
+    gui.hidden = true;
+    // bake the time of the day shadows, the first render uploads them
+    terrain.bakeLightmaps(384, 512);
+
+    while(!terrain.LightmapsBaked())
+    {
+        glfwPollEvents();
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+
+    APP_LOG(info) << "Capturing " << captureFrames << " frames to " << captureDir;
+}
+
+bool App::updateCapture(int frame, float &time)
+{
+    if(frame >= captureFrames) return false;
+
+    // fixed steps so the capture does not depend on the frame rate
+    float progress = (float)frame / (captureFrames - 1);
+    time = glm::mix(captureSunFrom, captureSunTo, progress) / gui.timeScale;
+    gui.wireframeMode = frame >= captureWireframeFrom;
+    // orbit around the terrain center
+    float angle = glm::two_pi<float>() * frame / captureFrames;
+    camera.lookAt(
+        glm::vec3(std::sin(angle) * 10.0f, 4.5f, std::cos(angle) * 10.0f),
+        glm::vec3(0.0f, 0.0f, 0.0f)
+    );
+    return true;
+}
+
+void App::saveFrame(int frame)
+{
+    int width, height;
+    glfwGetFramebufferSize(this->appWindow->getWindow(), &width, &height);
+    std::vector<unsigned char> pixels(width * height * 3);
+    glPixelStorei(GL_PACK_ALIGNMENT, 1);
+    glReadBuffer(GL_BACK);
+    glReadPixels(0, 0, width, height, GL_BGR, GL_UNSIGNED_BYTE, pixels.data());
+    // opengl rows start at the bottom, as freeimage expects without top down
+    FIBITMAP *image = FreeImage_ConvertFromRawBits(
+                          pixels.data(), width, height, width * 3, 24,
+                          FI_RGBA_RED_MASK, FI_RGBA_GREEN_MASK, FI_RGBA_BLUE_MASK, FALSE);
+    char name[32];
+    std::snprintf(name, sizeof(name), "\\frame_%04d.png", frame);
+    FreeImage_Save(FIF_PNG, image, (captureDir + name).c_str());
+    FreeImage_Unload(image);
 }
 
 void App::handleUserInput(GLFWwindow * window, float deltaTime)

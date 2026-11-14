@@ -31,9 +31,16 @@ class App
         MainWindow * CreateContext();
         // app render loop
         void Start();
+        // opt-in capture mode (--capture <dir>), orbits the camera around the
+        // terrain, switches to wireframe partway and saves every frame as png
+        std::string captureDir;
+        void setupCapture();
+        bool updateCapture(int frame, float &time);
+        void saveFrame(int frame);
     public:
         static App * Instance();
         void Run();
+        void CaptureTo(const std::string &dir) { captureDir = dir; }
         Terrain &getTerrain() { return terrain; }
         Camera &getCamera() { return camera; }
         AppInterface &Gui() { return gui; }

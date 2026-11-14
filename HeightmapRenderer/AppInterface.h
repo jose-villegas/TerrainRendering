@@ -25,6 +25,8 @@ class AppInterface
         float geoThreeshold;
         bool showBBoxes;
         bool frustumCulling;
+        // skips the interface windows, used by capture mode
+        bool hidden = false;
         void initialize(GLFWwindow * window);
         void draw(float time);
         void render();

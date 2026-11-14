@@ -14,6 +14,8 @@ void AppInterface::draw(float time)
 {
     // inmediate user interface new frame
     ImGui_ImplGlfwGL3_NewFrame();
+
+    if(!hidden)
     {
         static ImVec2 stackedSize;
         ImGuiIO& io = ImGui::GetIO();

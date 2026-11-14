@@ -29,6 +29,8 @@ class Terrain
         void calculateLightDir(float time, glm::vec3 &outDir, glm::vec3 &outColor);
         // mesh height at position
         float heightAt(glm::vec2 position);
+        // true once the baking thread finished, until render uploads the data
+        bool LightmapsBaked() const { return bakingDone; }
     private:
         void setProgramUniforms(float time);
         // multiplies for current time
