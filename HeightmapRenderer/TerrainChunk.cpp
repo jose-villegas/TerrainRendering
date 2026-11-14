@@ -8,7 +8,8 @@ bool TerrainChunk::enableFrustumCulling = true;
 BoundingBox * TerrainChunk::chunkBBox = nullptr;
 ChunkDetailLevel * TerrainChunk::chunkLod = nullptr;
 
-void TerrainChunk::bindBuffer(Program &program)
+void TerrainChunk::bindBuffer(Program &program,
+                              const ChunkDetailLevel::SideLevels &neighbours)
 {
     // upload position data to the gpu
     buffer[0].Bind(Buffer::Target::Array);
@@ -29,7 +30,7 @@ void TerrainChunk::bindBuffer(Program &program)
 
     if(chunkLod)
     {
-        chunkLod->bindBuffer(currentLoD);
+        chunkLod->bindBuffer(currentLoD, neighbours);
     }
 }
 
@@ -37,16 +38,18 @@ void TerrainChunk::chooseLoDLevel(Camera &camera, const glm::vec3 & position)
 {
     distanceToEye = glm::distance2(position, camera.Position());
     float C = getCameraConstant(camera);
+    // the errors are measured on the unit mesh, scale them to world heights
+    float heightScale = App::Instance()->getTerrain().HeightScale();
     // highest by default
     currentLoD = ChunkDetailLevel::High;
 
     for(int i = 0; i < 2; i++)
     {
-        entropyDistances[i] = C * C * heightChange[i] * heightChange[i];
+        // geomipmapping, use level i + 1 once the eye is farther than D = d * C
+        float d = heightChange[i] * heightScale;
+        entropyDistances[i] = C * C * d * d;
 
-        if(distanceToEye >
-           // we have to scale the distances with the terrain enlargement
-           entropyDistances[i] * App::Instance()->getTerrain().TerrainHorizontalScale())
+        if(distanceToEye > entropyDistances[i])
             currentLoD = ChunkDetailLevel::LodLevel(i + 1);
     }
 }
@@ -58,9 +61,8 @@ float TerrainChunk::getCameraConstant(Camera &camera)
     return A / T;
 }
 
-void TerrainChunk::drawElements(Program &program)
+void TerrainChunk::updateLoD()
 {
-    static glm::vec3 positionCS, dimensionCS;
     positionCS = glm::vec3(
                      (glm::vec4(this->center, 1.0f) * TransformationMatrices::Model())
                  );
@@ -68,22 +70,24 @@ void TerrainChunk::drawElements(Program &program)
                       (glm::vec4(this->dimension,
                                  1.0f) * TransformationMatrices::Model())
                   );
-
-    // frustum culling terrain chunk
-    if(enableFrustumCulling)
-    {
-        if(!App::Instance()->getCamera()
-           .isBoxInFrustum(positionCS, dimensionCS / 2.0f)) return;
-    }
-
-    // calculates distance to camera for lod selection
+    // trapezoid - cube culling per chunk
+    visible = !enableFrustumCulling || App::Instance()->getCamera()
+              .isBoxInFrustum(positionCS, dimensionCS / 2.0f);
+    // culled chunks still choose a level, their visible neighbours stitch to it
     chooseLoDLevel(App::Instance()->getCamera(), positionCS);
+}
+
+void TerrainChunk::drawElements(Program &program,
+                                const ChunkDetailLevel::SideLevels &neighbours)
+{
+    if(!visible) return;
+
     // binds the chunk mesh data
-    bindBuffer(program);
+    bindBuffer(program, neighbours);
     // draw primitives to gpu
     gl.DrawElements(
         PrimitiveType::TriangleStrip,
-        chunkLod->indicesSize(currentLoD),
+        chunkLod->indicesSize(currentLoD, neighbours),
         DataType::UnsignedInt
     );
 
@@ -92,6 +96,47 @@ void TerrainChunk::drawElements(Program &program)
     {
         chunkBBox->render(positionCS, dimensionCS);
     }
+}
+
+float TerrainChunk::levelError(int level) const
+{
+    /************************************************************************/
+    /*
+    x---x---x             x-------x
+    | \ | \ |             | \     |
+    x---x---x  Breaks To  |   \   |
+    | \ | \ |             |     \ |
+    x---x---x             x-------x
+
+    Every full resolution vertex is compared with the height of the coarse
+    triangle it falls in, the triangle strips split each cell along the
+    diagonal from the first row and column to the next ones
+    */
+    /************************************************************************/
+    int size = chunkLod->ChunkSize();
+    int step = 1 << level;
+    auto height = [&](int row, int col) { return vertices[row * size + col].y; };
+    float maxError = 0.0f;
+
+    for(int row = 0; row < size; row++)
+    {
+        for(int col = 0; col < size; col++)
+        {
+            int row0 = std::min(row / step * step, size - 1 - step);
+            int col0 = std::min(col / step * step, size - 1 - step);
+            int row1 = row0 + step, col1 = col0 + step;
+            float u = (float)(col - col0) / step;
+            float v = (float)(row - row0) / step;
+            float coarse = u >= v
+                           ? height(row0, col0) + u * (height(row0, col1) - height(row0, col0))
+                           + v * (height(row1, col1) - height(row0, col1))
+                           : height(row0, col0) + v * (height(row1, col0) - height(row0, col0))
+                           + u * (height(row1, col1) - height(row1, col0));
+            maxError = std::max(maxError, std::abs(height(row, col) - coarse));
+        }
+    }
+
+    return maxError;
 }
 
 TerrainChunk::TerrainChunk(std::vector<glm::vec3> & vertices,
@@ -121,148 +166,9 @@ TerrainChunk::TerrainChunk(std::vector<glm::vec3> & vertices,
             maxHeight - minHeight,
             chunkSpatialSize
         );
-    //for(int i = 0; i < 2; i++)
-    //{
-    //    int currentLoD = (int)std::pow(2, i);
-    //    // calculate current entropy
-    //    glm::vec3 position = glm::vec3();
-    //    glm::vec3 direction = glm::vec3();
-    //    std::vector<glm::vec3> lVertices;
-    //    std::vector<int> stopLerpToken;
-    //    // extract lower lod vertices
-    //    for each(int index in chunkLod->IndicesLoD()[i + 1])
-    //    {
-    //        index != chunkLod->RestartIndexToken()
-    //        ? lVertices.push_back(this->vertices[index])
-    //        , stopLerpToken.push_back(-1)
-    //        : stopLerpToken.back() = lVertices.size() - 1;
-    //    }
-    //    // calculating the height difference is easy considering
-    //    // the way vertex indexes are ordered, leaving the breaking
-    //    // point of the higher lod just in the middle of the low lod
-    //    // triangle strip lines
-    //    std::vector<float> lowHeight;
-    //    for(int j = 0; j < lVertices.size() - 1; j++)
-    //    {
-    //        if(stopLerpToken[j] == j) continue;
-    //        // calculate the mid point height between vertex lines at this
-    //        // point is where the geomipmap algorithm breaks the higher mesh
-    //        lowHeight.push_back(glm::lerp(lVertices[j], lVertices[j + 1], 0.5f).y);
-    //    }
-    //    int nextSize = (chunkLod->ChunkSize() - 1) / std::pow(2, i) + 1;
-    //    int stepper = 0; int stepMultiplier = std::pow(2, i);
-    //    std::vector<float> realHeight;
-    //    for(int y = 0; y < nextSize - 1; y = stepper * 2)
-    //    {
-    //        stepper++;
-    //        for(int x = 0; x < nextSize; x++)
-    //        {
-    //            int vertIndex = ((y + 1) * chunkLod->ChunkSize() + x) * stepMultiplier;
-    //            realHeight.push_back(this->vertices[vertIndex].y);
-    //        }
-    //    }
-    //    float maxEntropy = 0.0f;
-    //    for(int j = 0; j < realHeight.size(); j++)
-    //    {
-    //        maxEntropy = std::max(maxEntropy, std::abs(realHeight[i] - lowHeight[i]));
-    //    }
-    //    this->heightChange[i] = maxEntropy;
-    //}
-    // slow calculation for entropies
-    std::vector<glm::vec3> lVertices;
-    std::vector<glm::vec3> hVertices;
-
-    for(int i = 0; i < 2; i++)
-    {
-        if(i == 0) hVertices = std::vector<glm::vec3>(this->vertices);
-        else { hVertices = lVertices; lVertices.clear(); }
-
-        int yStepper = 1;
-        int hChunkLodSize = (chunkLod->ChunkSize() - 1) / std::pow(2, i) + 1;
-        int lChunkLodSize = (chunkLod->ChunkSize() - 1) / std::pow(2, i + 1) + 1;
-
-        for(int y = 0; y < hChunkLodSize; y = 2 * yStepper, yStepper++)
-        {
-            int xStepper = 1;
-
-            for(int x = 0; x < hChunkLodSize; x = 2 * xStepper, xStepper++)
-            {
-                lVertices.push_back(hVertices[y * hChunkLodSize + x]);
-            }
-        }
-
-        /************************************************************************/
-        /*
-        x---x---x             x-------x
-        | \ | \ |             | \     |
-        x---x---x  Breaks To  |   \   |
-        | \ | \ |             |     \ |
-        x---x---x             x-------x
-
-        We compare the geometric height error
-        at the vertex loss points, comparing
-        the heigth difference
-        */
-        /************************************************************************/
-        std::vector<float> lHeight;
-        std::vector<float> hHeight;
-
-        for(int y = 0; y < lChunkLodSize; y++)
-        {
-            for(int x = 0; x < lChunkLodSize; x++)
-            {
-                // calculate horizontal lines height loss
-                if(x < lChunkLodSize - 1)
-                {
-                    lHeight.push_back(
-                        glm::lerp(
-                            lVertices[y * lChunkLodSize + x],
-                            lVertices[y * lChunkLodSize + x + 1],
-                            0.5f
-                        ).y
-                    );
-                    // get higher lod original horizontal heights
-                    hHeight.push_back(hVertices[2 * y * hChunkLodSize + 2 * x + 1].y);
-                }
-
-                // calculate vertical height loss
-                if(y < lChunkLodSize - 1)
-                {
-                    lHeight.push_back(
-                        glm::lerp(
-                            lVertices[y * lChunkLodSize + x],
-                            lVertices[(y + 1) * lChunkLodSize + x],
-                            0.5f
-                        ).y
-                    );
-                    // get higher lod original vertical heights
-                    hHeight.push_back(hVertices[(2 * y + 1) * hChunkLodSize + 2 * x].y);
-                }
-
-                // calculate diagonal height loss
-                if(y < lChunkLodSize - 1 && x < lChunkLodSize - 1)
-                {
-                    lHeight.push_back(
-                        glm::lerp(
-                            lVertices[y * lChunkLodSize + x],
-                            lVertices[(y + 1) * lChunkLodSize + x + 1],
-                            0.5f
-                        ).y
-                    );
-                    hHeight.push_back(hVertices[(2 * y + 1) * hChunkLodSize + 2 * x + 1].y);
-                }
-            }
-        }
-
-        float maxEntropy = 0.0f;
-
-        for(int j = 0; j < hHeight.size(); j++)
-        {
-            maxEntropy = std::max(maxEntropy, std::abs(hHeight[i] - lHeight[i]));
-        }
-
-        this->heightChange[i] = maxEntropy;
-    }
+    // geometric errors per level, kept growing with coarser levels
+    this->heightChange[0] = levelError(1);
+    this->heightChange[1] = std::max(this->heightChange[0], levelError(2));
 }
 
 void TerrainChunk::bindBufferData(Program &program)

@@ -3,6 +3,7 @@
 #include "Terrain.h"
 #include "AppInterface.h"
 #include "Camera.h"
+#include "LightShafts.h"
 
 class App
 {
@@ -15,6 +16,7 @@ class App
         Camera camera;
         Terrain terrain;
         AppInterface gui;
+        LightShafts lightShafts;
 
         void handleUserInput(GLFWwindow * window, float deltaTime);
 
@@ -31,9 +33,22 @@ class App
         MainWindow * CreateContext();
         // app render loop
         void Start();
+        // light shafts pass over the terrain drawn since beginScene
+        void renderLightShafts(float time);
+        // opt-in capture mode (--capture <dir>), orbits the camera around the
+        // terrain, switches to wireframe partway and saves every frame as png
+        std::string captureDir;
+        // with --light-shafts the capture sweeps a sunset instead
+        bool captureSunset = false;
+        void setupCapture();
+        bool updateCapture(int frame, float &time);
+        void saveFrame(int frame);
     public:
         static App * Instance();
         void Run();
+        void CaptureTo(const std::string &dir) { captureDir = dir; }
+        // starts with the light shafts on, the capture then sweeps the sunset
+        void EnableLightShafts() { gui.lightShafts = true; }
         Terrain &getTerrain() { return terrain; }
         Camera &getCamera() { return camera; }
         AppInterface &Gui() { return gui; }

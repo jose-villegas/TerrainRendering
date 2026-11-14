@@ -11,6 +11,8 @@ class TerrainMultiTexture
         Context gl;
         // range
         GLfloat ranges[MAX_TERRAIN_TEXTURE_RANGES * 3];
+        // mean color per range, the texture average once loaded
+        glm::vec3 averageColor[MAX_TERRAIN_TEXTURE_RANGES];
 
     public:
         void loadTexture(const std::string &filepath, const int index);
@@ -20,5 +22,8 @@ class TerrainMultiTexture
         void SetTextureRange(const int index, const float start, const float end);
         void SetUniforms(Program &program);
         GLuint UITextureId(const int index);
+        // diffuse reflectance at a height in [0, 1], the luminance of the
+        // range colors blended like the terrain shader does
+        float Albedo(float height) const;
 };
 

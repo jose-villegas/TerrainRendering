@@ -96,6 +96,44 @@ void TerrainChunksGenerator::bindBufferData(Program &program)
     }
 }
 
+void TerrainChunksGenerator::drawChunks(Program &program)
+{
+    for(auto &hLineChunks : this->meshChunks)
+    {
+        for(TerrainChunk *chunk : hLineChunks)
+        {
+            chunk->updateLoD();
+        }
+    }
+
+    int count = (int)chunkCount;
+
+    for(int y = 0; y < count; y++)
+    {
+        for(int x = 0; x < count; x++)
+        {
+            TerrainChunk &chunk = *meshChunks[y][x];
+            // the first vertex row borders the previous chunk row, chunks on
+            // the mesh border keep their own level on that side
+            auto levelAt = [&](int nx, int ny)
+            {
+                return nx < 0 || ny < 0 || nx >= count || ny >= count
+                       ? chunk.LoD() : meshChunks[ny][nx]->LoD();
+            };
+            ChunkDetailLevel::SideLevels neighbours;
+            neighbours[ChunkDetailLevel::Top] = levelAt(x, y - 1);
+            neighbours[ChunkDetailLevel::Left] = levelAt(x - 1, y);
+            neighbours[ChunkDetailLevel::Down] = levelAt(x, y + 1);
+            neighbours[ChunkDetailLevel::Right] = levelAt(x + 1, y);
+
+            // bounding boxes switch the program, restore it before drawing
+            if(TerrainChunk::DrawingBoundingBoxes()) program.Use();
+
+            chunk.drawElements(program, neighbours);
+        }
+    }
+}
+
 TerrainChunksGenerator::~TerrainChunksGenerator()
 {
     // deallocate chunks

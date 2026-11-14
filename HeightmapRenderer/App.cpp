@@ -67,49 +67,15 @@ void App::Configure()
         this->appWindow->windowWidth(),
         this->appWindow->windowHeight()
     );
-    //setup logging to file
-    logging::add_file_log
-    (
-        keywords::file_name = "app_%N.log",
-        keywords::format =
-            (
-                expr::stream
-                << expr::format_date_time< boost::posix_time::ptime >("TimeStamp",
-                        "%Y-%m-%d %H:%M:%S") << ":"
-                << expr::attr< unsigned int >("LineID")
-                << " <" << logging::trivial::severity << "> "
-                << expr::smessage
-            )
-    );
-    logging::add_console_log
-    (
-        std::cout,
-        keywords::format =
-            (
-                expr::stream
-                << expr::format_date_time< boost::posix_time::ptime >("TimeStamp",
-                        "%Y-%m-%d %H:%M:%S") << ":"
-                << expr::attr< unsigned int >("LineID")
-                << " <" << logging::trivial::severity << "> "
-                << expr::smessage
-            )
-    );
-    // filter priority
-    logging::core::get()->set_filter
-    (
-        logging::trivial::severity >= logging::trivial::info
-    );
-    logging::add_common_attributes();
+    //setup logging to console and file, filter priority
+    logging::Logger::get().addFile("app_0.log");
+    logging::Logger::get().setMinimum(logging::severity::info);
     // log libraries version
-    BOOST_LOG_TRIVIAL(info) << "GLFW " << glfwGetVersionString();
-    BOOST_LOG_TRIVIAL(info) << "OpenGL " << glGetString(GL_VERSION) << "s, GLSL " <<
+    APP_LOG(info) << "GLFW " << glfwGetVersionString();
+    APP_LOG(info) << "OpenGL " << glGetString(GL_VERSION) << "s, GLSL " <<
                             glGetString(GL_SHADING_LANGUAGE_VERSION);
-    BOOST_LOG_TRIVIAL(info) << "Boost "
-                            << BOOST_VERSION / 100000 << "."        // major version
-                            << BOOST_VERSION / 100 % 1000 << "."    // minior version
-                            << BOOST_VERSION % 100;                 // patch level
-    BOOST_LOG_TRIVIAL(info) << "Ocornut's IMGUI " << ImGui::GetVersion();
-    BOOST_LOG_TRIVIAL(info) << "FreeImage "
+    APP_LOG(info) << "Ocornut's IMGUI " << ImGui::GetVersion();
+    APP_LOG(info) << "FreeImage "
                             << std::to_string(FREEIMAGE_MAJOR_VERSION)
                             << "." + std::to_string(FREEIMAGE_MINOR_VERSION)
                             << "." + std::to_string(FREEIMAGE_RELEASE_SERIAL);
@@ -185,10 +151,18 @@ void App::Start()
         glm::vec3(0, 0, 5), 0
     );
     App::Instance()->getTerrain().createMesh(8);
+    const bool capturing = !captureDir.empty();
+    int frame = 0;
+
+    if(capturing) setupCapture();
 
     while(!glfwWindowShouldClose(this->appWindow->getWindow()))
     {
-        if(!gui.pauseTime) time += ImGui::GetIO().DeltaTime;
+        if(capturing)
+        {
+            if(!updateCapture(frame, time)) break;
+        }
+        else if(!gui.pauseTime) time += ImGui::GetIO().DeltaTime;
 
         //camera.lookAt(
         //    glm::vec3(
@@ -210,13 +184,168 @@ void App::Start()
         );
         // draw the user interface
         gui.draw(time);
-        // render terrain
+        // render terrain, through the light shafts pass when enabled
+        bool shafts = gui.lightShafts && lightShafts.Available();
+        int width = 0, height = 0;
+
+        if(shafts)
+        {
+            glfwGetFramebufferSize(this->appWindow->getWindow(), &width, &height);
+            lightShafts.beginScene(width, height);
+            shafts = lightShafts.Available();
+        }
+
         terrain.render(time);
+
+        if(shafts) renderLightShafts(time);
+
+        // a shader that failed to build turns the toggle off
+        if(!lightShafts.Available()) gui.lightShafts = false;
+
         // render user interface
         gui.render();
+
+        if(capturing) saveFrame(frame++);
+
         // swap double buffer
         glfwSwapBuffers(this->appWindow->getWindow());
     }
+}
+
+namespace
+{
+    // capture mode frames: one full orbit, 8 seconds when played at 30 frames
+    // per second, wireframe from the middle on
+    const int captureFrames = 240;
+    const int captureWireframeFrom = 120;
+    // the orbit starts at the camera of the readme screenshot, found by
+    // matching its terrain silhouette, with the sun 7 degrees high behind the
+    // far ridge so its shadow fills the basin like in the screenshot, the
+    // view starts back lit and brightens as the sun rises to about 57
+    // degrees and the orbit turns to the sunlit slopes, the baked lightmaps
+    // interpolate between the times of the day
+    const float captureStartAngle = glm::radians(34.5f);
+    const float captureSunFrom = 2.05f;
+    const float captureSunTo = 0.6f;
+    // the --light-shafts capture sets the sun instead, low enough for the peaks to
+    // cast long shadows through the fog, and without the wireframe
+    const float captureShaftsSunFrom = 1.7f;
+    const float captureShaftsSunTo = 2.05f;
+    // pixel error large enough to show the level of detail chunks
+    const float capturePixelError = 3.0f;
+}
+
+void App::renderLightShafts(float time)
+{
+    LightShafts::Sun sun;
+    terrain.calculateLightDir(time * gui.timeScale, sun.direction, sun.color);
+    LightShafts::TerrainInfo info =
+    {
+        terrain.getMeshHeightsId(), terrain.TerrainHorizontalScale(), terrain.HeightScale()
+    };
+    LightShafts::View view =
+    {
+        TransformationMatrices::View(), TransformationMatrices::Projection(),
+        camera.Position()
+    };
+    lightShafts.density = gui.shaftDensity;
+    lightShafts.intensity = gui.shaftIntensity;
+    lightShafts.endScene(sun, info, view);
+}
+
+void App::setupCapture()
+{
+    CreateDirectoryA(captureDir.c_str(), nullptr);
+    // same terrain as the readme screenshot, 513 mesh on a 512 heightmap
+    gui.meshResolution = gui.heightmapResolution = 9;
+    terrain.createTerrain(512, glm::vec3(0, 0, 5), 0);
+    terrain.createMesh(9);
+    // textured terrain from low to high: soil, grass, soil, snow, on the
+    // default quarter height ranges
+    const char *soil =
+        "Resources\\Textures\\depositphotos_30900321-Seamless-Texture-of-Rocky-Steppe-Soil..jpg";
+    const char *textures[4] =
+    {
+        soil,
+        "Resources\\Textures\\Seamless_grass_texture_by_hhh316.jpg",
+        soil,
+        "Resources\\Textures\\snow_scuffed_ground_1.jpg"
+    };
+
+    for(int i = 0; i < 4; i++)
+    {
+        terrain.loadTexture(i, textures[i]);
+        terrain.setTextureRange(i, i / 4.0f, (i + 1) / 4.0f);
+    }
+
+    // the level of detail chunks show the mesh subdivision in wireframe
+    gui.geomipmapping = terrain.useLoDChunks = true;
+    gui.geoThreeshold = capturePixelError;
+    ChunkDetailLevel::Threeshold(capturePixelError);
+    gui.hidden = true;
+    // --light-shafts picks the sunset capture, both show the light shafts
+    captureSunset = gui.lightShafts;
+    gui.lightShafts = true;
+
+    // the sunset is about the haze, thicker and brighter than the default
+    if(captureSunset)
+    {
+        gui.shaftDensity = 0.08f;
+        gui.shaftIntensity = 5.0f;
+    }
+
+    // the low sun of the readme shadows would turn the time of the day
+    // grading into a sunset, the screenshot colors are neutral; the sunset
+    // capture keeps it, its sunset is the point
+    gui.colorGrading = captureSunset;
+    terrain.EnableTimeOfTheDayColorGrading(captureSunset);
+    // path trace the time of the day lighting, the first render uploads it
+    terrain.bakeLightmaps(384, 512);
+
+    while(!terrain.LightmapsBaked())
+    {
+        glfwPollEvents();
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+
+    APP_LOG(info) << "Capturing " << captureFrames << " frames to " << captureDir;
+}
+
+bool App::updateCapture(int frame, float &time)
+{
+    if(frame >= captureFrames) return false;
+
+    // fixed steps so the capture does not depend on the frame rate
+    float progress = (float)frame / (captureFrames - 1);
+    float sunFrom = captureSunset ? captureShaftsSunFrom : captureSunFrom;
+    float sunTo = captureSunset ? captureShaftsSunTo : captureSunTo;
+    time = glm::mix(sunFrom, sunTo, progress) / gui.timeScale;
+    gui.wireframeMode = !captureSunset && frame >= captureWireframeFrom;
+    // orbit around the terrain center
+    float angle = captureStartAngle + glm::two_pi<float>() * frame / captureFrames;
+    camera.lookAt(
+        glm::vec3(std::sin(angle) * 10.0f, 5.0f, std::cos(angle) * 10.0f),
+        glm::vec3(0.0f, 0.0f, 0.0f)
+    );
+    return true;
+}
+
+void App::saveFrame(int frame)
+{
+    int width, height;
+    glfwGetFramebufferSize(this->appWindow->getWindow(), &width, &height);
+    std::vector<unsigned char> pixels(width * height * 3);
+    glPixelStorei(GL_PACK_ALIGNMENT, 1);
+    glReadBuffer(GL_BACK);
+    glReadPixels(0, 0, width, height, GL_BGR, GL_UNSIGNED_BYTE, pixels.data());
+    // opengl rows start at the bottom, as freeimage expects without top down
+    FIBITMAP *image = FreeImage_ConvertFromRawBits(
+                          pixels.data(), width, height, width * 3, 24,
+                          FI_RGBA_RED_MASK, FI_RGBA_GREEN_MASK, FI_RGBA_BLUE_MASK, FALSE);
+    char name[32];
+    std::snprintf(name, sizeof(name), "\\frame_%04d.png", frame);
+    FreeImage_Save(FIF_PNG, image, (captureDir + name).c_str());
+    FreeImage_Unload(image);
 }
 
 void App::handleUserInput(GLFWwindow * window, float deltaTime)
@@ -314,13 +443,13 @@ void App::Run()
     catch(oglplus::ProgramBuildError &e)
     {
         glfwTerminate();
-        BOOST_LOG_TRIVIAL(error) << e.Log();
+        APP_LOG(error) << e.Log();
         throw std::runtime_error(e.what());
     }
     catch(std::exception &e)
     {
         glfwTerminate();
-        BOOST_LOG_TRIVIAL(error) << e.what();
+        APP_LOG(error) << e.what();
         throw std::runtime_error(e.what());
     }
 }

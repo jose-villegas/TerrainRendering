@@ -1,9 +1,10 @@
 #include "Commons.h"
 #include "App.h"
 #include "AppInterface.h"
+#include "LightShafts.h"
 #include "TransformationMatrices.h"
 #include "OpenFileDialog.h"
-using namespace boost::algorithm;
+using util::clamp;
 
 void AppInterface::initialize(GLFWwindow * window)
 {
@@ -14,6 +15,8 @@ void AppInterface::draw(float time)
 {
     // inmediate user interface new frame
     ImGui_ImplGlfwGL3_NewFrame();
+
+    if(!hidden)
     {
         static ImVec2 stackedSize;
         ImGuiIO& io = ImGui::GetIO();
@@ -46,7 +49,7 @@ void AppInterface::draw(float time)
             ImGui::SameLine();
             // set proper ranges
             lightmapFreqAndSize[0] = std::max(1, lightmapFreqAndSize[0]);
-            lightmapFreqAndSize[1] = std::min(std::max(4, lightmapFreqAndSize[1]), 4096);
+            lightmapFreqAndSize[1] = std::min(std::max(4, lightmapFreqAndSize[1]), 1024);
 
             if(ImGui::Button("Bake Lightmaps"))
             {
@@ -69,16 +72,14 @@ void AppInterface::draw(float time)
 
             if(ImGui::Button("Save Heightmap To File"))
             {
-                using namespace boost::posix_time;
-                // set string format
-                static std::locale loc(std::cout.getloc(), new time_facet("%Y-%m-%d_%H-%M-%S"));
-                // parse it to a std::string
-                std::basic_stringstream<char> wss;
-                wss.imbue(loc);
-                // get current time
-                wss << second_clock::universal_time();
+                // format the current utc time as a timestamp
+                char stamp[32];
+                std::time_t now = std::time(nullptr);
+                std::tm utc;
+                gmtime_s(&utc, &now);
+                std::strftime(stamp, sizeof(stamp), "%Y-%m-%d_%H-%M-%S", &utc);
                 // write terrain to file, concatenate timestamp
-                App::Instance()->getTerrain().saveTerrainToFile("terrain" + wss.str());
+                App::Instance()->getTerrain().saveTerrainToFile("terrain" + std::string(stamp));
             }
 
             stackedSize = ImGui::GetWindowSize();
@@ -121,11 +122,12 @@ void AppInterface::draw(float time)
                 .TimeScale(timeScale);
             }
 
-            ImGui::Text("Ambient Occlusion");
+            ImGui::Text("Sky Light / Bounce Light");
 
-            if(ImGui::SliderInt("##ao", &occlusionStrenght, 0, 32))
+            if(ImGui::SliderFloat("##sky", &skyLight, 0.0f, 1.0f)
+               | ImGui::SliderFloat("##bounce", &bounceLight, 0.0f, 4.0f))
             {
-                App::Instance()->getTerrain().Occlusion(occlusionStrenght);
+                App::Instance()->getTerrain().IndirectLight(skyLight, bounceLight);
             }
 
             if(ImGui::Checkbox("Enable Geomipmapping", &geomipmapping))
@@ -152,6 +154,16 @@ void AppInterface::draw(float time)
                 {
                     TerrainChunk::EnableFrustumCulling(frustumCulling);
                 }
+            }
+
+            ImGui::Checkbox("Light Shafts", &lightShafts);
+
+            if(lightShafts)
+            {
+                ImGui::Text("Shafts Density");
+                ImGui::SliderFloat("##sdensity", &shaftDensity, 0.0f, 0.3f);
+                ImGui::Text("Shafts Intensity");
+                ImGui::SliderFloat("##sintensity", &shaftIntensity, 0.0f, 15.0f);
             }
 
             ImGui::Checkbox("Pause", &pauseTime);
@@ -312,7 +324,8 @@ void AppInterface::terminate()
 
 AppInterface::AppInterface()
 {
-    this->occlusionStrenght = 4;
+    this->skyLight = 0.2f;
+    this->bounceLight = 1.0f;
     this->maxHeight = 2.0;
     this->terrainScale = 15.f;
     this->meshResolution = 8;
@@ -324,9 +337,13 @@ AppInterface::AppInterface()
     this->lightmapFreqAndSize[0] = 384;
     this->lightmapFreqAndSize[1] = 256;
     this->terrainRange[2] = 5.0f;
+    this->geomipmapping = false;
     this->geoThreeshold = ChunkDetailLevel::Threeshold();
     this->frustumCulling = TerrainChunk::EnableFrustumCulling();
     this->showBBoxes = TerrainChunk::DrawingBoundingBoxes();
+    LightShafts shaftDefaults;
+    this->shaftDensity = shaftDefaults.density;
+    this->shaftIntensity = shaftDefaults.intensity;
 
     for(int i = 0; i < 4; i++)
     {

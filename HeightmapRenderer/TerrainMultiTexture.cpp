@@ -30,11 +30,14 @@ void TerrainMultiTexture::loadTexture(const std::string &filepath,
         dib = FreeImage_Load(fif, filepath.c_str());
     }
 
+    if(!dib) return;
+
     // highest quality rescaleing
-    dib = FreeImage_Rescale(dib, 512, 512, FILTER_BICUBIC);
+    FIBITMAP *rescaled = FreeImage_Rescale(dib, 512, 512, FILTER_BICUBIC);
+    FreeImage_Unload(dib);
     // no alpha channel for terrain textures
-    dib = FreeImage_ConvertTo24Bits(dib);
-    // dib = FreeImage_ConvertTo32Bits(dib);
+    dib = FreeImage_ConvertTo24Bits(rescaled);
+    FreeImage_Unload(rescaled);
     // get raw data
     unsigned char * bits = FreeImage_GetBits(dib);
     // get image data
@@ -49,16 +52,31 @@ void TerrainMultiTexture::loadTexture(const std::string &filepath,
         return;
     }
 
-    // pass data to the texture array
+    // mean color for the light baker, rows are bgr
+    glm::dvec3 sum(0.0);
+
+    for(unsigned int y = 0; y < height; y++)
+    {
+        const unsigned char *row = bits + y * FreeImage_GetPitch(dib);
+
+        for(unsigned int x = 0; x < width; x++)
+        {
+            sum += glm::dvec3(row[x * 3 + 2], row[x * 3 + 1], row[x * 3]);
+        }
+    }
+
+    averageColor[index] = glm::vec3(sum / (255.0 * width * height));
+    // pass data to the texture array, the mipmaps are generated after the
+    // layer upload, otherwise the new layer keeps its previous empty mipmaps
     gl.Bound(Texture::Target::_2DArray, this->texture)
     .MinFilter(TextureMinFilter::LinearMipmapLinear)
     .MagFilter(TextureMagFilter::Linear)
-    .GenerateMipmap()
     .WrapS(TextureWrap::Repeat)
     .WrapT(TextureWrap::Repeat)
     .Anisotropy(16.0f)
     .SubImage3D(0, 0, 0, index, 512, 512, 1, PixelDataFormat::BGR,
-                PixelDataType::UnsignedByte, bits);
+                PixelDataType::UnsignedByte, bits)
+    .GenerateMipmap();
     // pass data to interface texture
     gl.Bound(Texture::Target::_2D, this->uiTextures[index])
     .Image2D(0, PixelDataInternalFormat::RGB8, 512, 512, 0, PixelDataFormat::BGR,
@@ -73,10 +91,44 @@ void TerrainMultiTexture::loadTexture(const std::string &filepath,
     this->ranges[index * 3 + 2] = 1.0f;
 }
 
+float TerrainMultiTexture::Albedo(float height) const
+{
+    glm::vec3 color(0.0f);
+
+    // same weights as generateTerrainColor in terrain.frag
+    for(int i = 0; i < MAX_TERRAIN_TEXTURE_RANGES; i++)
+    {
+        float regionMin = ranges[i * 3], regionMax = ranges[i * 3 + 1];
+        float regionRange = regionMax - regionMin;
+        float regionOffset = height - regionMax;
+
+        if((i == 0 && regionOffset < 0.0f)
+           || (i == MAX_TERRAIN_TEXTURE_RANGES - 1 && regionOffset > 0.0f))
+        {
+            regionOffset = 0.0f;
+        }
+
+        if(regionRange <= 0.0f) continue;
+
+        float weight = std::max(0.0f, (regionRange - std::abs(regionOffset)) / regionRange);
+        color += weight * averageColor[i];
+    }
+
+    return util::clamp(glm::dot(color, glm::vec3(0.2126f, 0.7152f, 0.0722f)),
+                       0.0f, 0.9f);
+}
+
 TerrainMultiTexture::TerrainMultiTexture()
 {
+    // the terrain shader colors for ranges without a texture
+    averageColor[0] = glm::vec3(0.1f, 0.7f, 1.0f);
+    averageColor[1] = glm::vec3(0.7f, 0.7f, 0.5f);
+    averageColor[2] = glm::vec3(0.3f, 0.5f, 0.1f);
+    averageColor[3] = glm::vec3(1.0f, 0.9f, 0.9f);
+
+    // plain rgb, the terrain shader outputs without gamma correction
     gl.Bound(Texture::Target::_2DArray, this->texture)
-    .Image3D(0, PixelDataInternalFormat::SRGB8, 512, 512, 4, 0,
+    .Image3D(0, PixelDataInternalFormat::RGB8, 512, 512, 4, 0,
              PixelDataFormat::BGR, PixelDataType::UnsignedByte, nullptr);
 
     for(int i = 0; i < MAX_TERRAIN_TEXTURE_RANGES; i++)
