@@ -147,6 +147,9 @@
     <ClCompile Include="Terrain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="LightShafts.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="Heightmap.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -206,6 +209,9 @@
     <ClInclude Include="Terrain.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="LightShafts.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="Heightmap.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -254,6 +260,21 @@
       <Filter>Resource Files</Filter>
     </None>
     <None Include="Resources\Shaders\terrain.vert">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="Resources\Shaders\fullscreen.vert">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="Resources\Shaders\shafts_shadow_height.frag">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="Resources\Shaders\shafts_march.frag">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="Resources\Shaders\shafts_blur.frag">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="Resources\Shaders\shafts_composite.frag">
       <Filter>Resource Files</Filter>
     </None>
   </ItemGroup>

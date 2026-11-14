@@ -602,6 +602,7 @@ void Terrain::createMesh(const int meshResExponent)
         gl.PrimitiveRestartIndex(restartIndex);
     }
     this->indexSize = indices.size();
+    uploadMeshHeights(vertices);
     // generate mesh chunk process
     this->chunkGenerator.generateChunks(
         vertices, normals, texCoords, meshResExponent, 4
@@ -966,4 +967,24 @@ void Terrain::IndirectLight(float skyStrength, float bounceStrength)
     program.Use();
     Uniform<float>(program, "skyLightStrength").Set(std::max(0.0f, skyStrength));
     Uniform<float>(program, "bounceStrength").Set(std::max(0.0f, bounceStrength));
+}
+
+void Terrain::uploadMeshHeights(const std::vector<glm::vec3> &vertices)
+{
+    std::vector<float> heights(vertices.size());
+
+    for(size_t i = 0; i < vertices.size(); i++) heights[i] = vertices[i].y;
+
+    // a spare unit, the terrain shader samples whatever unit 0 holds
+    GLint activeUnit;
+    glGetIntegerv(GL_ACTIVE_TEXTURE, &activeUnit);
+    glActiveTexture(GL_TEXTURE8);
+    gl.Bound(Texture::Target::_2D, this->meshHeights)
+    .Image2D(0, PixelDataInternalFormat::R16F, meshResolution, meshResolution, 0,
+             PixelDataFormat::Red, PixelDataType::Float, heights.data())
+    .MinFilter(TextureMinFilter::Linear)
+    .MagFilter(TextureMagFilter::Linear)
+    .WrapS(TextureWrap::ClampToEdge)
+    .WrapT(TextureWrap::ClampToEdge);
+    glActiveTexture(activeUnit);
 }

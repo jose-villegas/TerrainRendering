@@ -184,8 +184,24 @@ void App::Start()
         );
         // draw the user interface
         gui.draw(time);
-        // render terrain
+        // render terrain, through the light shafts pass when enabled
+        bool shafts = gui.lightShafts && lightShafts.Available();
+        int width = 0, height = 0;
+
+        if(shafts)
+        {
+            glfwGetFramebufferSize(this->appWindow->getWindow(), &width, &height);
+            lightShafts.beginScene(width, height);
+            shafts = lightShafts.Available();
+        }
+
         terrain.render(time);
+
+        if(shafts) renderLightShafts(time);
+
+        // a shader that failed to build turns the toggle off
+        if(!lightShafts.Available()) gui.lightShafts = false;
+
         // render user interface
         gui.render();
 
@@ -211,8 +227,30 @@ namespace
     const float captureStartAngle = glm::radians(34.5f);
     const float captureSunFrom = 2.05f;
     const float captureSunTo = 0.6f;
+    // with the light shafts the sun sets instead, low enough for the peaks to
+    // cast long shadows through the fog, and without the wireframe
+    const float captureShaftsSunFrom = 1.7f;
+    const float captureShaftsSunTo = 2.05f;
     // pixel error large enough to show the level of detail chunks
     const float capturePixelError = 3.0f;
+}
+
+void App::renderLightShafts(float time)
+{
+    LightShafts::Sun sun;
+    terrain.calculateLightDir(time * gui.timeScale, sun.direction, sun.color);
+    LightShafts::TerrainInfo info =
+    {
+        terrain.getMeshHeightsId(), terrain.TerrainHorizontalScale(), terrain.HeightScale()
+    };
+    LightShafts::View view =
+    {
+        TransformationMatrices::View(), TransformationMatrices::Projection(),
+        camera.Position()
+    };
+    lightShafts.density = gui.shaftDensity;
+    lightShafts.intensity = gui.shaftIntensity;
+    lightShafts.endScene(sun, info, view);
 }
 
 void App::setupCapture()
@@ -267,8 +305,10 @@ bool App::updateCapture(int frame, float &time)
 
     // fixed steps so the capture does not depend on the frame rate
     float progress = (float)frame / (captureFrames - 1);
-    time = glm::mix(captureSunFrom, captureSunTo, progress) / gui.timeScale;
-    gui.wireframeMode = frame >= captureWireframeFrom;
+    float sunFrom = gui.lightShafts ? captureShaftsSunFrom : captureSunFrom;
+    float sunTo = gui.lightShafts ? captureShaftsSunTo : captureSunTo;
+    time = glm::mix(sunFrom, sunTo, progress) / gui.timeScale;
+    gui.wireframeMode = !gui.lightShafts && frame >= captureWireframeFrom;
     // orbit around the terrain center
     float angle = captureStartAngle + glm::two_pi<float>() * frame / captureFrames;
     camera.lookAt(

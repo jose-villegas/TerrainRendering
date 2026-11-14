@@ -1,6 +1,7 @@
 #include "Commons.h"
 #include "App.h"
 #include "AppInterface.h"
+#include "LightShafts.h"
 #include "TransformationMatrices.h"
 #include "OpenFileDialog.h"
 using util::clamp;
@@ -153,6 +154,16 @@ void AppInterface::draw(float time)
                 {
                     TerrainChunk::EnableFrustumCulling(frustumCulling);
                 }
+            }
+
+            ImGui::Checkbox("Light Shafts", &lightShafts);
+
+            if(lightShafts)
+            {
+                ImGui::Text("Shafts Density");
+                ImGui::SliderFloat("##sdensity", &shaftDensity, 0.0f, 0.3f);
+                ImGui::Text("Shafts Intensity");
+                ImGui::SliderFloat("##sintensity", &shaftIntensity, 0.0f, 15.0f);
             }
 
             ImGui::Checkbox("Pause", &pauseTime);
@@ -330,6 +341,9 @@ AppInterface::AppInterface()
     this->geoThreeshold = ChunkDetailLevel::Threeshold();
     this->frustumCulling = TerrainChunk::EnableFrustumCulling();
     this->showBBoxes = TerrainChunk::DrawingBoundingBoxes();
+    LightShafts shaftDefaults;
+    this->shaftDensity = shaftDefaults.density;
+    this->shaftIntensity = shaftDefaults.intensity;
 
     for(int i = 0; i < 4; i++)
     {

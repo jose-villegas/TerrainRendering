@@ -84,6 +84,9 @@ class Terrain
         Context gl;
         // heightmap field texture
         Texture heightmapField;
+        // mesh vertex heights, uploaded with the mesh
+        Texture meshHeights;
+        void uploadMeshHeights(const std::vector<glm::vec3> &vertices);
         // terrain shadows, generated with heightmap info
         Texture terrainShadowmap;
         // time of the day 3d texture
@@ -140,6 +143,8 @@ class Terrain
         GLuint getTextureId(int index);
         // returns terrain extra lightmap, created with fastGenerateShadowmapParallel
         GLuint getLightmapId() { return oglplus::GetName(this->terrainShadowmap); };
+        // mesh vertex heights in [0, 1], one texel per vertex, for the light shafts
+        GLuint getMeshHeightsId() { return oglplus::GetName(this->meshHeights); };
 
         // mesh vertical scaling
         void HeightScale(float val);

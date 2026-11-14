@@ -27,6 +27,10 @@ class AppInterface
         float geoThreeshold;
         bool showBBoxes;
         bool frustumCulling;
+        // light shafts post process, off keeps the plain terrain rendering
+        bool lightShafts = false;
+        float shaftDensity;
+        float shaftIntensity;
         // skips the interface windows, used by capture mode
         bool hidden = false;
         void initialize(GLFWwindow * window);
