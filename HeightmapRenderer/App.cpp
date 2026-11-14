@@ -202,14 +202,15 @@ namespace
     // per second, wireframe from the middle on
     const int captureFrames = 240;
     const int captureWireframeFrom = 120;
-    // the orbit starts at the camera and sun of the readme screenshot, found by
-    // matching its terrain silhouette and shading, then the sun rises
-    // towards noon so the shadows shorten and turn across the terrain and the
-    // wireframe half stays well lit, the baked lightmaps interpolate between
-    // the times of the day
+    // the orbit starts at the camera of the readme screenshot, found by
+    // matching its terrain silhouette, and at the sun that casts its shadows:
+    // its original baker stretched the terrain height 3.7 times, a sun 12.9
+    // degrees high casts the same shadows from the true heights, then the
+    // sun rises to about 40 degrees so the shadows shorten across the
+    // terrain, the baked lightmaps interpolate between the times of the day
     const float captureStartAngle = glm::radians(34.5f);
-    const float captureSunFrom = 1.16f;
-    const float captureSunTo = 0.3f;
+    const float captureSunFrom = 1.9f;
+    const float captureSunTo = 1.2f;
     // pixel error large enough to show the level of detail chunks
     const float capturePixelError = 3.0f;
 }
@@ -244,6 +245,10 @@ void App::setupCapture()
     gui.geoThreeshold = capturePixelError;
     ChunkDetailLevel::Threeshold(capturePixelError);
     gui.hidden = true;
+    // the low sun of the readme shadows would turn the time of the day
+    // grading into a sunset, the screenshot colors are neutral
+    gui.colorGrading = false;
+    terrain.EnableTimeOfTheDayColorGrading(false);
     // path trace the time of the day lighting, the first render uploads it
     terrain.bakeLightmaps(384, 512);
 
