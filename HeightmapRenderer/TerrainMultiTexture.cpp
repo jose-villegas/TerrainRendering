@@ -79,8 +79,9 @@ void TerrainMultiTexture::loadTexture(const std::string &filepath,
 
 TerrainMultiTexture::TerrainMultiTexture()
 {
+    // plain rgb, the terrain shader outputs without gamma correction
     gl.Bound(Texture::Target::_2DArray, this->texture)
-    .Image3D(0, PixelDataInternalFormat::SRGB8, 512, 512, 4, 0,
+    .Image3D(0, PixelDataInternalFormat::RGB8, 512, 512, 4, 0,
              PixelDataFormat::BGR, PixelDataType::UnsignedByte, nullptr);
 
     for(int i = 0; i < MAX_TERRAIN_TEXTURE_RANGES; i++)

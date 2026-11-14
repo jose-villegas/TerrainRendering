@@ -5,9 +5,6 @@
 const int MAX_POINT_LIGHTS = 2;
 const int MAX_SPOT_LIGHTS = 2;
 
-float shadowing = 1.0f;
-float occlusion = 1.0f;
-
 uniform float currentLightmap = 0.0f;
 uniform float occlusionStrength = 4.0f;
 
@@ -170,7 +167,7 @@ vec3 calculatePointLight(PointLight lightSource, vec3 position,
         }
     }
 
-    return ambient + (specular + diffuse) * attenuationFactor * shadowing * occlusion;
+    return ambient + (specular + diffuse) * attenuationFactor;
 }
 
 vec3 calculateSpotLight(SpotLight lightSource, vec3 position,
@@ -219,7 +216,7 @@ vec3 calculateDirectionalLight(DirectionalLight lightSource, vec3 position,
         }
     }
 
-    return ambient + (specular + diffuse) * shadowing * occlusion;
+    return ambient + (specular + diffuse);
 }
 
 vec3 generateTerrainColor(float height, vec2 texCoord)
@@ -287,9 +284,11 @@ float terrainOcclusion(vec3 position, vec3 normal, vec2 texCoord, float rayLengt
     float occlusion = 0.0f;
     mat3 orthobasis = mat3(matrix.normal);
 
-    for(int i = 1; i < 17; i++)
+    const int occlusionSamples = 32;
+
+    for(int i = 1; i <= occlusionSamples; i++)
     {
-        float s = float(i) / 16.0f;
+        float s = float(i) / occlusionSamples;
         float a = sqrt(s * terrainMapSize.x);
         float b = sqrt(s);
         float x = sin(a) * b * rayLength;
@@ -302,7 +301,7 @@ float terrainOcclusion(vec3 position, vec3 normal, vec2 texCoord, float rayLengt
         occlusion += distFactor * lambertian;
     }
 
-    return max(0.0, (1.0 - occlusion / 32.0));
+    return max(0.0, (1.0 - occlusion / occlusionSamples));
 }
 
 // Vertex shader inputs
@@ -316,10 +315,10 @@ layout(location = 0) out vec4 fragColor;
 void main()
 {
     vec3 surfaceNormal = normalize(normal);
-    vec3 surfaceColor = generateTerrainColor(height, texCoord);
+    // baked shadows darken the surface color, ambient light included
+    vec3 surfaceColor = generateTerrainColor(height, texCoord) * terrainShadow(texCoord);
     vec3 materialSpecular = material.specular * material.shininessStrength * height;
-    // shader variables
-    shadowing = terrainShadow(texCoord);
+    float occlusion = 1.0f;
 
     if(occlusionStrength > 0.0f)
     {
@@ -344,7 +343,7 @@ void main()
                                          surfaceColor, materialSpecular);
     }
 
-    // gamma correction
-    vec3 gamma = vec3(1.0f / 2.2f);
-    fragColor = vec4(pow(totalLight, gamma), 1.0f);
+    // ambient occlusion darkens all the light, the colors stay in the texture
+    // space without gamma correction like the original screenshot
+    fragColor = vec4(totalLight * occlusion, 1.0f);
 }
