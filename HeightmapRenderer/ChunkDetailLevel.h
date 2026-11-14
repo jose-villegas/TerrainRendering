@@ -15,54 +15,46 @@ class ChunkDetailLevel
             Low,
             AvailableLevels
         };
-        enum LodLevelTransition
+        // chunk borders, top is the first vertex row and left the first column
+        enum Side
         {
             Top = 0,
             Left,
             Down,
             Right,
-            TopLeft,
-            TopDown,
-            TopRight,
-            LeftDown,
-            LeftRight,
-            DownRight,
-            TopRightDown,
-            RightDownLeft,
-            DownLeftTop,
-            LeftTopRight,
-            TopRightDownLeft
+            SideCount
         };
+        typedef std::array<LodLevel, SideCount> SideLevels;
     private:
         // triangle strip primitive restart at
         int restartIndexToken;
-        // base indices configuration for 3 levels of detail
+        // index combinations per lod level and neighbour lod levels, the border
+        // vertices snap to the coarser neighbour spacing so chunks stay watertight
         // vectors are cleared once data is uploaded to GPU
-        std::array<std::vector<unsigned int>, 3> indicesLoD;
-        std::array<std::array<std::vector<unsigned int>, 16>, 3> transitionLod;
+        std::unordered_map<int, std::vector<unsigned int>> indices;
+        std::vector<unsigned int> stripIndices(LodLevel level, const SideLevels &sides) const;
+        static int combinationKey(LodLevel level, const SideLevels &sides);
     private:
         Context gl;
-        // indices count on level of detail
-        std::array<int, 3> indexSizes;
+        // indices count per combination
+        std::unordered_map<int, int> indexSizes;
         // avoid creating indices again if mesh has the same configuration
         bool indicesCombinationGenerated;
         // indices combinations for different lod levels
-        std::array<Buffer, 3> indicesBuffer;
+        std::unordered_map<int, Buffer> indicesBuffer;
         // thresshold t_
         static float threeshold;
     public:
         // uploads index data to gpu
         void bindBufferData();
-        // binds the indices based on lod
-        void bindBuffer(LodLevel levelOfDetail);
-        // indices count on level of detail
-        int indicesSize(LodLevel levelOfDetail);
-        // generates the 3 LoD indices configurations based on mesh and chunk size
+        // binds the indices for a chunk at level with neighbours at sides
+        void bindBuffer(LodLevel level, const SideLevels &sides);
+        // indices count for a chunk at level with neighbours at sides
+        int indicesSize(LodLevel level, const SideLevels &sides);
+        // generates the LoD indices configurations based on mesh and chunk size
         void generateDetailLevels(int meshSize, int chunkSize);
         // token to restart the triangle strip
         int RestartIndexToken() const { return restartIndexToken; }
-        // indexes combinations per lod
-        const std::array<std::vector<unsigned int>, 3> &IndicesLoD() { return indicesLoD; }
 
         ChunkDetailLevel();
         ~ChunkDetailLevel();

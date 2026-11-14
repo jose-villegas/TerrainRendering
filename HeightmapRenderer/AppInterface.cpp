@@ -322,6 +322,7 @@ AppInterface::AppInterface()
     this->lightmapFreqAndSize[0] = 384;
     this->lightmapFreqAndSize[1] = 256;
     this->terrainRange[2] = 5.0f;
+    this->geomipmapping = false;
     this->geoThreeshold = ChunkDetailLevel::Threeshold();
     this->frustumCulling = TerrainChunk::EnableFrustumCulling();
     this->showBBoxes = TerrainChunk::DrawingBoundingBoxes();

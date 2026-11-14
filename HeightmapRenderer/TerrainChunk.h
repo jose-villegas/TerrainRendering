@@ -55,10 +55,17 @@ class TerrainChunk
         float distanceToEye;
         // chunk lod level
         ChunkDetailLevel::LodLevel currentLoD;
-        // height change between lod levels per chunk
+        // largest height error of the medium and low levels against the
+        // full resolution chunk, the geomipmapping d per level
         std::array<float, 2> heightChange;
         // defines the distance for selecting the lod level
         std::array<float, 2> entropyDistances;
+        // bounding box in world space and its frustum visibility
+        glm::vec3 positionCS;
+        glm::vec3 dimensionCS;
+        bool visible = true;
+        // geometric error of the level against the full resolution chunk
+        float levelError(int level) const;
     private:
         // chunk center vertex
         glm::vec3 center;
@@ -69,7 +76,7 @@ class TerrainChunk
         // mesh data gpu buffers
         std::array<Buffer, 4> buffer;
         // called on drawElemented
-        void bindBuffer(Program &program);
+        void bindBuffer(Program &program, const ChunkDetailLevel::SideLevels &neighbours);
     public:
         TerrainChunk(std::vector<glm::vec3> & vertices,
                      std::vector<glm::vec3> & normals,
@@ -79,8 +86,12 @@ class TerrainChunk
         // chunk num vertices = chunkSizeExponent ^ 2 + 1
         ~TerrainChunk() {};
         void bindBufferData(Program &program);
-        // calls glDrawElements with the current lod level indices
-        void drawElements(Program &program);
+        // culls the chunk and chooses its lod level, before any chunk draws
+        void updateLoD();
+        ChunkDetailLevel::LodLevel LoD() const { return currentLoD; }
+        // calls glDrawElements with the current lod level indices, stitched
+        // to the lod levels of the neighbour chunks
+        void drawElements(Program &program, const ChunkDetailLevel::SideLevels &neighbours);
         // calculates appropiate lod level
         void chooseLoDLevel(Camera &camera, const glm::vec3 & position);
         // returns the C constant for geomipmapping

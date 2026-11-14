@@ -38,6 +38,9 @@ class TerrainChunksGenerator
                             unsigned int chunkSizeExponent);
         // uploads all the chunks buffer objects to the gpu
         void bindBufferData(Program &program);
+        // chooses every chunk lod level, then draws the visible chunks
+        // stitched to their neighbours levels
+        void drawChunks(Program &program);
         // generated chunks
         TerrainChunk &MeshChunk(int x, int y) { return *meshChunks[x][y]; }
         unsigned int ChunkCount() const { return chunkCount; }
