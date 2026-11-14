@@ -17,7 +17,7 @@ Write-up: https://jose-villegas.github.io/post/terrain/
 
 ### Geomipmapping fixes
 
-Chunks at different levels left cracks where they met (magenta below), and each chunk measured its error on a single vertex, so coarse levels showed up right in front of the camera. Borders now stitch to the coarser neighbour, and the error is the largest gap to the full-detail mesh.
+Chunks at different levels left cracks where they met (magenta below), and each chunk measured its error on a single vertex, so coarse levels showed up right in front of the camera. Borders now stitch to the coarser neighbour, and the error is the largest gap to the full-detail mesh. [How it works, with diagrams](docs/geomipmapping.md).
 
 | Before | After |
 | --- | --- |
