@@ -206,11 +206,12 @@ namespace
     // matching its terrain silhouette, and at the sun that casts its shadows:
     // its original baker stretched the terrain height 3.7 times, a sun 12.9
     // degrees high casts the same shadows from the true heights, then the
-    // sun rises to about 40 degrees so the shadows shorten across the
-    // terrain, the baked lightmaps interpolate between the times of the day
+    // sun rises to about 57 degrees so the shadows shorten and turn across
+    // the terrain, the baked lightmaps interpolate between the times of the
+    // day
     const float captureStartAngle = glm::radians(34.5f);
     const float captureSunFrom = 1.9f;
-    const float captureSunTo = 1.2f;
+    const float captureSunTo = 0.6f;
     // pixel error large enough to show the level of detail chunks
     const float capturePixelError = 3.0f;
 }
