@@ -202,11 +202,13 @@ namespace
     // per second, wireframe from the middle on
     const int captureFrames = 240;
     const int captureWireframeFrom = 120;
-    // time of the day sweep in radians of the day cycle, mid morning to mid
-    // afternoon, noon falls on the far side of the orbit where the camera
-    // faces the sun, the baked lightmaps interpolate in between
-    const float captureSunFrom = -0.9f;
-    const float captureSunTo = 0.9f;
+    // the orbit starts at the camera and sun of the readme screenshot, found by
+    // matching its terrain silhouette and shading, then the sun lowers
+    // towards the evening so the shadows stretch across the terrain, the
+    // baked lightmaps interpolate between the times of the day
+    const float captureStartAngle = glm::radians(34.5f);
+    const float captureSunFrom = 1.16f;
+    const float captureSunTo = 1.85f;
     // pixel error large enough to show the level of detail chunks
     const float capturePixelError = 3.0f;
 }
@@ -236,7 +238,6 @@ void App::setupCapture()
         terrain.setTextureRange(i, i / 4.0f, (i + 1) / 4.0f);
     }
 
-
     // the level of detail chunks show the mesh subdivision in wireframe
     gui.geomipmapping = terrain.useLoDChunks = true;
     gui.geoThreeshold = capturePixelError;
@@ -263,9 +264,9 @@ bool App::updateCapture(int frame, float &time)
     time = glm::mix(captureSunFrom, captureSunTo, progress) / gui.timeScale;
     gui.wireframeMode = frame >= captureWireframeFrom;
     // orbit around the terrain center
-    float angle = glm::two_pi<float>() * frame / captureFrames;
+    float angle = captureStartAngle + glm::two_pi<float>() * frame / captureFrames;
     camera.lookAt(
-        glm::vec3(std::sin(angle) * 10.0f, 4.5f, std::cos(angle) * 10.0f),
+        glm::vec3(std::sin(angle) * 10.0f, 5.0f, std::cos(angle) * 10.0f),
         glm::vec3(0.0f, 0.0f, 0.0f)
     );
     return true;
