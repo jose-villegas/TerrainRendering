@@ -203,14 +203,13 @@ namespace
     const int captureFrames = 240;
     const int captureWireframeFrom = 120;
     // the orbit starts at the camera of the readme screenshot, found by
-    // matching its terrain silhouette, and at the sun that casts its shadows:
-    // its original baker stretched the terrain height 3.7 times, a sun 12.9
-    // degrees high behind the far ridge casts the same shadows from the true
-    // heights, the view starts back lit and brightens as the sun rises to
-    // about 57 degrees and the orbit turns to the sunlit slopes, the baked
-    // lightmaps interpolate between the times of the day
+    // matching its terrain silhouette, with the sun 7 degrees high behind the
+    // far ridge so its shadow fills the basin like in the screenshot, the
+    // view starts back lit and brightens as the sun rises to about 57
+    // degrees and the orbit turns to the sunlit slopes, the baked lightmaps
+    // interpolate between the times of the day
     const float captureStartAngle = glm::radians(34.5f);
-    const float captureSunFrom = 1.9f;
+    const float captureSunFrom = 2.05f;
     const float captureSunTo = 0.6f;
     // pixel error large enough to show the level of detail chunks
     const float capturePixelError = 3.0f;
