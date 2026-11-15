@@ -21,22 +21,22 @@ uniform vec2 terrainUVScaling = vec2(25, 25);
 
 const int MAX_TERRAIN_TEXTURE_RANGES = 4;
 uniform sampler2DArray terrainTextures;
-uniform vec3 terrainRange[MAX_TERRAIN_TEXTURE_RANGES] =
-{
+uniform vec3 terrainRange[MAX_TERRAIN_TEXTURE_RANGES] = vec3[MAX_TERRAIN_TEXTURE_RANGES]
+(
     // min, max, active > 0.0
     vec3(0.0, 0.1, -1.0),
     vec3(0.1, 0.3, -1.0),
     vec3(0.3, 0.7, -1.0),
     vec3(0.7, 1.0, -1.0)
-};
+);
 
-vec3 heightSample[MAX_TERRAIN_TEXTURE_RANGES] =
-{
+vec3 heightSample[MAX_TERRAIN_TEXTURE_RANGES] = vec3[MAX_TERRAIN_TEXTURE_RANGES]
+(
     vec3(0.1, 0.7, 1.0),
     vec3(0.7, 0.7, 0.5),
     vec3(0.3, 0.5, 0.1),
     vec3(1.0, 0.9, 0.9)
-};
+);
 
 struct Attenuation
 {
