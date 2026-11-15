@@ -1,6 +1,14 @@
 #include "Commons.h"
 #include "App.h"
 
+// laptops with two GPUs run this on the discrete one instead of the
+// integrated one; the drivers look these exports up in the executable
+extern "C"
+{
+    __declspec(dllexport) unsigned long NvOptimusEnablement = 1;
+    __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
+}
+
 int main(int argc, char **argv)
 {
     std::unique_ptr<App> app(App::Instance());
